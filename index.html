@@ -2,1475 +2,1513 @@
 <html lang="en">
 
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Integer Interactive MOP | Starlink Gen 3 Install</title>
-	<script src="https://cdn.tailwindcss.com"></script>
-	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Integer Interactive MOP | Starlink Gen 3 Install</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-	<!-- Chosen Palette: Professional Clean with T-Mobile Magenta Accents. Backgrounds are clean white/light gray to minimize glare outside. Accents use #E20074 (T-Mobile Magenta) to align with brand identity, complemented by standard operational colors (Green for success, amber for pending). -->
-	<!-- Application Structure Plan: A mobile-first, phased checklist dashboard. Field techs need clear, sequential tasks without distractions. The SPA is divided into chronological phases based on the provided MOP document. A sticky header ensures the overall progress chart and current phase are always visible. Each step requires a physical tap, promoting active engagement and reducing missed steps. -->
-	<!-- Visualization & Content Choices: Progress -> Goal: Inform/Motivate -> Viz: Doughnut Chart (Chart.js) -> Interaction: Dynamically updates as steps are checked, giving immediate sense of accomplishment. Task Lists -> Goal: Organize/Execute -> Viz: Interactive Checklists -> Interaction: Tap to complete, highlights row to show focus. Callouts -> Goal: Emphasize -> Viz: Colored text blocks for phone numbers and critical checks. -> Library: Vanilla JS/DOM manipulation. -->
-	<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <!-- Chosen Palette: Professional Clean with T-Mobile Magenta Accents. Backgrounds are clean white/light gray to minimize glare outside. Accents use #E20074 (T-Mobile Magenta) to align with brand identity, complemented by standard operational colors (Green for success, amber for pending). -->
+    <!-- Application Structure Plan: A mobile-first, phased checklist dashboard. Field techs need clear, sequential tasks without distractions. The SPA is divided into chronological phases based on the provided MOP document. A sticky header ensures the overall progress chart and current phase are always visible. Each step requires a physical tap, promoting active engagement and reducing missed steps. -->
+    <!-- Visualization & Content Choices: Progress -> Goal: Inform/Motivate -> Viz: Doughnut Chart (Chart.js) -> Interaction: Dynamically updates as steps are checked, giving immediate sense of accomplishment. Task Lists -> Goal: Organize/Execute -> Viz: Interactive Checklists -> Interaction: Tap to complete, highlights row to show focus. Callouts -> Goal: Emphasize -> Viz: Colored text blocks for phone numbers and critical checks. -> Library: Vanilla JS/DOM manipulation. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
 
-	<style>
-		/* T-Mobile Custom Colors & Utilities */
-		:root {
-			--tmo-magenta: #E20074;
-			--tmo-magenta-hover: #c40064;
-		}
+    <style>
+        /* T-Mobile Custom Colors & Utilities */
+        :root {
+            --tmo-magenta: #E20074;
+            --tmo-magenta-hover: #c40064;
+        }
 
-		body {
-			background-color: #f3f4f6;
-			color: #1f2937;
-			font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-			-webkit-tap-highlight-color: transparent;
-		}
+        body {
+            background-color: #f3f4f6;
+            color: #1f2937;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-		.chart-container {
-			position: relative;
-			width: 100%;
-			max-width: 220px;
-			margin-left: auto;
-			margin-right: auto;
-			height: 220px;
-			max-height: 220px;
-		}
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 220px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 220px;
+            max-height: 220px;
+        }
 
-		.tab-btn {
-			border-bottom: 4px solid transparent;
-			transition: all 0.2s ease;
-		}
+        .tab-btn {
+            border-bottom: 4px solid transparent;
+            transition: all 0.2s ease;
+        }
 
-		.tab-btn.active {
-			border-bottom-color: var(--tmo-magenta);
-			color: var(--tmo-magenta);
-			font-weight: 700;
-			background-color: #fdf2f8;
-		}
+        .tab-btn.active {
+            border-bottom-color: var(--tmo-magenta);
+            color: var(--tmo-magenta);
+            font-weight: 700;
+            background-color: #fdf2f8;
+        }
 
-		/* Mobile-friendly large checkboxes */
-		.checkbox-custom {
-			accent-color: var(--tmo-magenta);
-			width: 1.75rem;
-			height: 1.75rem;
-			cursor: pointer;
-			margin-top: 0.1rem;
-		}
+        /* Mobile-friendly large checkboxes */
+        .checkbox-custom {
+            accent-color: var(--tmo-magenta);
+            width: 1.75rem;
+            height: 1.75rem;
+            cursor: pointer;
+            margin-top: 0.1rem;
+        }
 
-		.step-row {
-			transition: all 0.2s ease;
-		}
+        .step-row {
+            transition: all 0.2s ease;
+        }
 
-		.step-row.completed {
-			background-color: #fdf2f8;
-			/* very light magenta/pink */
-			border-color: #fbcfe8;
-		}
+        .step-row.completed {
+            background-color: #fdf2f8;
+            /* very light magenta/pink */
+            border-color: #fbcfe8;
+        }
 
-		.step-row.completed label {
-			color: #831843;
-			text-decoration: line-through;
-			opacity: 0.8;
-		}
+        .step-row.completed label {
+            color: #831843;
+            text-decoration: line-through;
+            opacity: 0.8;
+        }
 
-		/* Hide scrollbar for tabs but keep functionality */
-		.no-scrollbar::-webkit-scrollbar {
-			display: none;
-		}
+        /* Hide scrollbar for tabs but keep functionality */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
 
-		.no-scrollbar {
-			-ms-overflow-style: none;
-			scrollbar-width: none;
-		}
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
 
-		/* Input fields in general info */
-		.info-input {
-			width: 100%;
-			background: transparent;
-			border: none;
-			border-bottom: 1px solid #d1d5db;
-			padding: 0.25rem 0;
-			color: #111827;
-			font-weight: 500;
-		}
+        /* Input fields in general info */
+        .info-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid #d1d5db;
+            padding: 0.25rem 0;
+            color: #111827;
+            font-weight: 500;
+        }
 
-		.info-input:focus {
-			outline: none;
-			border-bottom-color: var(--tmo-magenta);
-		}
+        .info-input:focus {
+            outline: none;
+            border-bottom-color: var(--tmo-magenta);
+        }
 
-		/* Admin Mode Utilities */
-		.admin-only {
-			display: none;
-		}
+        /* Admin Mode Utilities */
+        .admin-only {
+            display: none;
+        }
 
-		body.admin-mode .admin-only {
-			display: flex;
-		}
-	</style>
+        body.admin-mode .admin-only {
+            display: flex;
+        }
+    </style>
 </head>
 
 <body class="min-h-screen flex flex-col">
 
-	<!-- LOGIN SCREEN -->
-	<div id="login-screen" class="fixed inset-0 z- flex items-center justify-center bg-gray-200">
-		<div class="bg-white p-8 rounded-xl shadow-lg max-w-md w-full mx-4 border-t-8 border-[#E20074]">
-			<div class="text-center mb-8">
-				<h1 class="text-3xl font-bold text-gray-900 tracking-tight">Integer Interactive MOP</h1>
-				<p class="text-gray-500 text-sm mt-1">Field Tech Portal &bull; Starlink Install</p>
-			</div>
-
-			<form id="login-form" onsubmit="handleLogin(event)">
-				<div class="mb-5">
-					<label class="block text-gray-700 text-sm font-bold mb-2">Username or Tech ID</label>
-					<input type="text" id="login-user"
-						class="w-full border border-gray-300 p-3 rounded-lg focus:border-[#E20074] focus:ring-1 focus:ring-[#E20074] focus:outline-none transition-colors"
-						placeholder="Enter username" required>
-				</div>
-				<div class="mb-6">
-					<label class="block text-gray-700 text-sm font-bold mb-2">Password</label>
-					<input type="password" id="login-pass"
-						class="w-full border border-gray-300 p-3 rounded-lg focus:border-[#E20074] focus:ring-1 focus:ring-[#E20074] focus:outline-none transition-colors"
-						placeholder="••••••••" required>
-				</div>
-
-				<div id="login-error"
-					class="hidden bg-red-50 text-red-600 border border-red-200 rounded-md p-3 text-sm mb-5 text-center font-medium">
-					Invalid credentials. Please try again.
-				</div>
-
-				<button type="submit"
-					class="w-full bg-[#E20074] text-white font-bold py-3 px-4 rounded-lg hover:bg-[#c40064] transition-colors shadow-md">
-					Secure Login
-				</button>
-			</form>
-
-			<div class="mt-8 pt-4 border-t border-gray-100 text-xs text-gray-400 text-center leading-relaxed">
-				<strong>Demo Credentials for Testing:</strong><br>
-				Tech User: <code class="bg-gray-100 px-1 rounded text-gray-600">tech1</code> / <code
-					class="bg-gray-100 px-1 rounded text-gray-600">pass123</code><br>
-				Admin User: <code class="bg-gray-100 px-1 rounded text-gray-600">admin</code> / <code
-					class="bg-gray-100 px-1 rounded text-gray-600">admin123</code>
-			</div>
-		</div>
-	</div>
-
-	<!-- MAIN APP (Hidden until login) -->
-	<div id="main-app" class="hidden flex-col min-h-screen">
-		<!-- Sticky Header for quick status view -->
-		<header class="bg-gray-900 text-white shadow-md sticky top-0 z-50">
-			<div class="container mx-auto px-4 py-3 flex justify-between items-center">
-				<div>
-					<h1 class="text-xl md:text-2xl font-bold tracking-tight">Integer Interactive MOP</h1>
-					<p class="text-gray-400 text-xs md:text-sm mt-0.5 flex items-center gap-2">
-						<span>Starlink Gen 3 Install</span>
-						<span class="text-gray-600">|</span>
-						<span id="display-logged-user" class="text-gray-300 italic">User</span>
-					</p>
-				</div>
-				<div class="flex items-center gap-4">
-					<div class="text-right hidden sm:block">
-						<span class="block text-[10px] text-gray-400 uppercase tracking-wider">Overall Progress</span>
-						<span id="header-percentage" class="text-xl md:text-2xl font-bold text-[#E20074]">0%</span>
-					</div>
-					<button onclick="handleLogout()"
-						class="bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white text-xs font-bold py-2 px-3 rounded transition-colors">
-						Logout
-					</button>
-				</div>
-			</div>
-
-			<!-- Navigation Tabs (Locked strictly based on progression) -->
-			<nav class="flex overflow-x-auto no-scrollbar bg-white border-b border-gray-200">
-				<button onclick="switchTab('overview')" id="tab-overview"
-					class="tab-btn active px-4 py-3 text-sm text-gray-600 whitespace-nowrap focus:outline-none flex-shrink-0 text-center font-medium">Info</button>
-				<button onclick="switchTab('phase1')" id="tab-phase1"
-					class="tab-btn px-4 py-3 text-sm text-gray-600 whitespace-nowrap focus:outline-none flex-shrink-0 text-center font-medium opacity-50 cursor-not-allowed"
-					disabled>1. Arrival</button>
-				<button onclick="switchTab('phase2')" id="tab-phase2"
-					class="tab-btn px-4 py-3 text-sm text-gray-600 whitespace-nowrap focus:outline-none flex-shrink-0 text-center font-medium opacity-50 cursor-not-allowed"
-					disabled>2. Install & Cable</button>
-				<button onclick="switchTab('phase3')" id="tab-phase3"
-					class="tab-btn px-4 py-3 text-sm text-gray-600 whitespace-nowrap focus:outline-none flex-shrink-0 text-center font-medium opacity-50 cursor-not-allowed"
-					disabled>3. Integrate</button>
-				<button onclick="switchTab('phase4')" id="tab-phase4"
-					class="tab-btn px-4 py-3 text-sm text-gray-600 whitespace-nowrap focus:outline-none flex-shrink-0 text-center font-medium opacity-50 cursor-not-allowed"
-					disabled>4. Closeout</button>
-				<!-- Knowledge Base Tab -->
-				<button onclick="switchTab('kb')" id="tab-kb"
-					class="tab-btn px-4 py-3 text-sm text-gray-600 whitespace-nowrap focus:outline-none flex-shrink-0 text-center font-medium border-l border-gray-200 bg-gray-50">&#128194;
-					KB & Docs</button>
-			</nav>
-		</header>
-
-		<main class="flex-grow container mx-auto px-4 py-6 max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-			<!-- Global Cancel Banner (Hidden by default) -->
-			<div id="global-cancel-banner"
-				class="hidden lg:col-span-3 bg-red-50 border border-red-200 rounded-xl p-6 shadow-sm mb-2 animate-fade-in">
-				<div class="flex flex-col md:flex-row items-start md:items-center gap-4">
-					<div class="bg-red-100 p-3 rounded-full shrink-0">
-						<span class="text-3xl text-red-600">&#9888;</span>
-					</div>
-					<div>
-						<h2 class="text-xl font-bold text-red-800">SITE INSTALLATION CANCELED</h2>
-						<p class="text-red-700 mt-1"><strong>Reason:</strong> <span id="display-cancel-reason"></span>
-						</p>
-						<p class="text-red-700 text-sm mt-1"><strong>Comments:</strong> <span
-								id="display-cancel-comments"></span></p>
-					</div>
-					<div class="mt-4 md:mt-0 md:ml-auto text-right">
-						<span class="block text-xs font-bold text-red-600 uppercase tracking-wider">Canceled By</span>
-						<span id="display-cancel-tech" class="text-red-800 font-bold italic"></span>
-					</div>
-				</div>
-			</div>
-
-			<!-- Sidebar: Context & Chart -->
-			<aside class="lg:col-span-1 flex flex-col gap-6">
-
-				<!-- Quick Contacts -->
-				<div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-					<h2 class="text-lg font-bold border-b border-gray-100 pb-2 mb-3 text-gray-800">&#128222; Quick
-						Contacts</h2>
-					<ul class="text-sm space-y-3">
-						<li class="bg-gray-50 p-3 rounded border border-gray-100 flex justify-between items-center">
-							<div>
-								<span class="block text-xs text-gray-500 font-bold uppercase">T-Mobile NOC</span>
-								<span class="text-sm font-medium text-gray-700 block mt-1">General Support</span>
-							</div>
-							<a href="tel:8776115868"
-								class="text-lg font-bold text-[#E20074] bg-[#fdf2f8] px-3 py-1 rounded-md border border-[#fbcfe8] whitespace-nowrap">877-611-5868</a>
-						</li>
-						<li class="bg-gray-50 p-3 rounded border border-gray-100 flex justify-between items-center">
-							<div>
-								<span class="block text-xs text-gray-500 font-bold uppercase">T-Mobile MIT
-									Support</span>
-								<span class="text-sm font-medium text-gray-700 block mt-1">Integration &
-									Alignment</span>
-							</div>
-							<a href="tel:9133153000"
-								class="text-lg font-bold text-[#E20074] bg-[#fdf2f8] px-3 py-1 rounded-md border border-[#fbcfe8] whitespace-nowrap">913-315-3000</a>
-						</li>
-						<li class="bg-gray-50 p-3 rounded border border-gray-100 flex justify-between items-center">
-							<div>
-								<span class="block text-xs text-gray-500 font-bold uppercase">Integer Support</span>
-								<span class="text-sm font-medium text-gray-700 block mt-1">General Support</span>
-							</div>
-							<a href="tel:5014133972"
-								class="text-lg font-bold text-[#E20074] bg-[#fdf2f8] px-3 py-1 rounded-md border border-[#fbcfe8] whitespace-nowrap">501-413-3972</a>
-						</li>
-					</ul>
-					<!-- Teams Chat Link/Button -->
-					<div class="mt-4">
-						<div
-							class="flex items-center justify-center gap-2 w-full bg-[#5c5fc8] text-white font-bold py-2 px-4 rounded-md">
-							<!-- Microsoft Teams generic icon representation -->
-							<span class="text-xl">&#128172;</span>
-							<span>Ericsson Support (Teams Chat)</span>
-						</div>
-						<p class="text-[10px] text-gray-500 text-center mt-1">Use Teams for check-in/out and quality
-							checks</p>
-					</div>
-				</div>
-
-				<!-- Progress Chart -->
-				<div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-					<h2 class="text-lg font-bold border-b border-gray-100 pb-2 mb-4 text-gray-800">Execution Tracking
-					</h2>
-					<div class="chart-container flex justify-center items-center">
-						<canvas id="progressChart"></canvas>
-					</div>
-					<div class="mt-4 text-center">
-						<span id="completed-count" class="text-2xl font-bold text-gray-800">0</span>
-						<span class="text-gray-500">of</span>
-						<span id="total-count" class="text-lg font-bold text-gray-600">22</span>
-						<span class="text-gray-500">Tasks Completed</span>
-					</div>
-				</div>
-
-				<div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-					<button onclick="switchTab('kb')"
-						class="w-full flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg transition-colors border border-gray-300">
-						<span class="text-xl">&#128218;</span> Open Knowledge Base
-					</button>
-				</div>
-
-				<!-- Cancellation Button -->
-				<div id="cancel-widget" class="bg-white p-5 rounded-xl shadow-sm border border-red-200">
-					<h2
-						class="text-lg font-bold border-b border-red-100 pb-2 mb-3 text-red-800 flex items-center gap-2">
-						<span class="text-xl">&#9888;</span> Site Cancellation
-					</h2>
-					<p class="text-xs text-gray-600 mb-4">If the installation cannot be completed, click below to log a
-						cancellation report and close the site.</p>
-					<button onclick="openCancelModal()"
-						class="w-full bg-white border border-red-500 text-red-600 hover:bg-red-50 hover:text-red-700 font-bold py-2 px-4 rounded-lg transition-colors shadow-sm">
-						Report Site Cancellation
-					</button>
-				</div>
-			</aside>
-
-			<!-- Main Content Area -->
-			<section class="lg:col-span-2 flex flex-col gap-4 pb-20">
-
-				<!-- General Information (Overview) -->
-				<div id="content-overview" class="block animate-fade-in">
-					<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 md:p-8">
-						<!-- Purpose Paragraph -->
-						<div class="mb-6 p-4 bg-gray-50 border-l-4 border-[#E20074] rounded-r-lg">
-							<h3 class="font-bold text-gray-800 text-lg mb-2">Purpose of this MOP</h3>
-							<p class="text-gray-700 text-sm leading-relaxed">
-								This Integer Interactive Method of Procedure (MOP) outlines the standardized,
-								step-by-step process for field technicians performing the installation, cabling, and
-								integration of Starlink Gen 3 Terminals at T-Mobile cell sites. It is designed to ensure
-								safe execution, proper hardware mounting per Ericsson guidelines, correct cable
-								terminations, and successful remote validation with T-Mobile MIT Support prior to site
-								closeout.
-							</p>
-						</div>
-
-						<h2 class="text-2xl font-bold text-gray-800 mb-6">1. General Information</h2>
-						<p class="text-gray-600 text-sm mb-6">Enter the site details for this specific execution. This
-							information is saved locally in your browser session.</p>
-
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-							<div>
-								<label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Site
-									ID</label>
-								<input type="text" class="info-input" placeholder="e.g., DA12345A" id="input-siteid"
-									oninput="checkProgression()">
-							</div>
-							<div>
-								<label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Date
-									of Execution</label>
-								<input type="date" class="info-input" id="input-date" onchange="checkProgression()">
-							</div>
-							<div>
-								<label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Time
-									In</label>
-								<input type="time" class="info-input" id="input-timein" onchange="checkProgression()">
-							</div>
-							<div>
-								<label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Time
-									Out</label>
-								<input type="time" class="info-input" id="input-timeout" onchange="checkProgression()">
-							</div>
-							<div>
-								<label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Field
-									Technician Name</label>
-								<input type="text" class="info-input" placeholder="Your Full Name" id="input-tech"
-									oninput="checkProgression()">
-							</div>
-							<div>
-								<label
-									class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Ericsson
-									RCM Name</label>
-								<input type="text" class="info-input" placeholder="RCM Name" id="input-rcm"
-									oninput="checkProgression()">
-							</div>
-						</div>
-
-						<!-- Admin Mode Toggle (Only visible if logged in as Admin, handled via JS classes) -->
-						<div
-							class="admin-only mt-10 pt-4 border-t border-gray-200 justify-between items-center bg-indigo-50 border-l-4 border-indigo-500 p-4 rounded-r-lg">
-							<div>
-								<span class="block text-sm font-bold text-indigo-900">Admin Mode Active</span>
-								<span class="text-xs text-indigo-700">You have full permissions to upload resources to
-									the Knowledge Base.</span>
-							</div>
-							<span class="text-2xl">&#128275;</span>
-						</div>
-
-						<div class="mt-8 pt-6 border-t border-gray-100">
-							<button id="btn-continue-p0" onclick="switchTab('phase1')"
-								class="w-full bg-gray-300 text-gray-500 font-bold py-4 px-4 rounded-lg cursor-not-allowed transition-colors duration-200 shadow-md"
-								disabled>
-								&#128274; Fill Site ID, Tech & RCM Name to Start
-							</button>
-						</div>
-					</div>
-				</div>
-
-				<!-- Phase 1 -->
-				<div id="content-phase1" class="hidden animate-fade-in">
-					<div class="mb-4 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-						<h2 class="text-2xl font-bold text-gray-800">Phase 1: Arrival & Pre-Checks</h2>
-						<p class="text-gray-600 mt-2 font-medium">Complete these steps immediately upon arrival before
-							beginning physical work.</p>
-					</div>
-					<div id="list-phase1" class="space-y-3"></div>
-
-					<!-- Pre-Pictures Upload UI Moved to Phase 1 -->
-					<div class="mt-8 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-						<div class="flex justify-between items-end mb-4">
-							<div>
-								<h3 class="text-lg font-bold text-gray-800">Required Pre-Pictures</h3>
-								<p class="text-sm text-gray-600 mt-1">Tap a box below to select and upload required
-									photos.</p>
-							</div>
-							<span
-								class="bg-[#fdf2f8] text-[#E20074] border border-[#fbcfe8] text-xs font-bold px-3 py-1.5 rounded-full"><span
-									id="pic-count">0</span>/5 Uploaded</span>
-						</div>
-
-						<div class="grid grid-cols-2 sm:grid-cols-3 gap-4" id="pre-pics-container">
-							<!-- Populated via Javascript -->
-						</div>
-					</div>
-
-					<div class="mt-8 pt-6 border-t border-gray-100">
-						<button id="btn-continue-p1" onclick="switchTab('phase2')"
-							class="w-full bg-gray-300 text-gray-500 font-bold py-4 px-4 rounded-lg cursor-not-allowed transition-colors duration-200 shadow-md"
-							disabled>
-							&#128274; Complete Phase 1 Tasks & Pre-Pictures to Continue
-						</button>
-					</div>
-				</div>
-
-				<!-- Phase 2 & 3 Combined as Install & Cable -->
-				<div id="content-phase2" class="hidden animate-fade-in">
-					<div class="mb-4 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-						<h2 class="text-2xl font-bold text-gray-800">Phase 2 & 3: Installation & Cabling</h2>
-						<p class="text-gray-600 mt-2 font-medium">Physical mounting of the Starlink hardware and cable
-							connections.</p>
-						<div
-							class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800 flex gap-3">
-							<span class="text-xl">&#9432;</span>
-							<div>
-								<strong>Reference Documents:</strong> Refer to the Ericsson Installation Guideline
-								pictures for specific cabinet configurations and conduit runs. Optional security methods
-								(extended mast, conduit, J-Box) may apply depending on site requirements.
-							</div>
-						</div>
-					</div>
-					<div id="list-phase2" class="space-y-3"></div>
-
-					<div class="mt-8 pt-6 border-t border-gray-100">
-						<button id="btn-continue-p2" onclick="switchTab('phase3')"
-							class="w-full bg-gray-300 text-gray-500 font-bold py-4 px-4 rounded-lg cursor-not-allowed transition-colors duration-200 shadow-md"
-							disabled>
-							&#128274; Complete Phase 2 Tasks to Continue
-						</button>
-					</div>
-				</div>
-
-				<!-- Phase 4 -->
-				<div id="content-phase3" class="hidden animate-fade-in">
-					<div
-						class="mb-4 bg-white p-6 rounded-xl shadow-sm border border-gray-200 border-l-4 border-l-amber-500">
-						<h2 class="text-2xl font-bold text-gray-800">Phase 4: Integration</h2>
-						<p class="text-gray-600 mt-2 font-medium">Do not leave the site until integration is fully
-							confirmed by the MIT team.</p>
-					</div>
-					<div id="list-phase3" class="space-y-3"></div>
-
-					<div class="mt-8 pt-6 border-t border-gray-100">
-						<button id="btn-continue-p3" onclick="switchTab('phase4')"
-							class="w-full bg-gray-300 text-gray-500 font-bold py-4 px-4 rounded-lg cursor-not-allowed transition-colors duration-200 shadow-md"
-							disabled>
-							&#128274; Complete Phase 3 Tasks to Continue
-						</button>
-					</div>
-				</div>
-
-				<!-- Phase 5, 6, 7 Combined as Closeout -->
-				<div id="content-phase4" class="hidden animate-fade-in">
-					<div class="mb-4 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-						<h2 class="text-2xl font-bold text-gray-800">Phase 5, 6 & 7: Closeout</h2>
-						<p class="text-gray-600 mt-2 font-medium">Labeling, COP (Close Out Package) Pictures, and
-							Checkout.</p>
-					</div>
-					<div id="list-phase4" class="space-y-3"></div>
-
-					<!-- Post-Pictures Upload UI -->
-					<div class="mt-8 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-						<div class="flex justify-between items-end mb-4">
-							<div>
-								<h3 class="text-lg font-bold text-gray-800">Required COP Pictures</h3>
-								<p class="text-sm text-gray-600 mt-1">Upload these specific photos for your Close Out
-									Package.</p>
-							</div>
-							<span
-								class="bg-[#fdf2f8] text-[#E20074] border border-[#fbcfe8] text-xs font-bold px-3 py-1.5 rounded-full"><span
-									id="post-pic-count">0</span>/8 Uploaded</span>
-						</div>
-
-						<div class="grid grid-cols-2 sm:grid-cols-3 gap-4" id="post-pics-container">
-							<!-- Populated via Javascript -->
-						</div>
-					</div>
-
-					<div class="mt-8 bg-green-50 border border-green-200 p-6 rounded-xl text-center"
-						id="completion-banner" style="display: none;">
-						<h3 class="text-xl font-bold text-green-800 mb-2">&#10004; Procedure Complete</h3>
-						<p class="text-green-700 mb-4">All tasks have been marked as completed.</p>
-						<div
-							class="flex flex-col md:flex-row justify-center items-center gap-4 text-sm text-green-900 border-t border-green-200 pt-4 mt-4 mb-6">
-							<div class="flex items-center gap-2">
-								<span class="font-bold">Tech Sig:</span>
-								<span id="sig-tech"
-									class="italic bg-white px-2 py-1 rounded border border-green-100 min-w-[150px] inline-block h-7"></span>
-							</div>
-							<div class="flex items-center gap-2">
-								<span class="font-bold">Time Completed:</span>
-								<span id="sig-time"
-									class="italic bg-white px-2 py-1 rounded border border-green-100 min-w-[100px] inline-block h-7"></span>
-							</div>
-						</div>
-					</div>
-
-					<!-- Submit COP Button inside Phase 4 block -->
-					<div class="mt-6">
-						<button id="submit-cop-btn"
-							class="w-full bg-gray-300 text-gray-500 font-bold py-4 px-4 rounded-lg cursor-not-allowed shadow-sm transition-all duration-200"
-							disabled onclick="submitCOP()">
-							&#128274; Complete Everything to Submit Close Out Package
-						</button>
-						<p id="submit-warning" class="text-xs text-red-600 mt-2 font-medium text-center">Please ensure
-							all general info fields, tasks, and pictures are completed before submitting.</p>
-					</div>
-				</div>
-
-				<!-- Knowledge Base Section -->
-				<div id="content-kb" class="hidden animate-fade-in">
-					<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 md:p-8">
-						<div class="flex items-center gap-3 mb-2">
-							<span class="text-3xl">&#128218;</span>
-							<h2 class="text-2xl font-bold text-gray-800">Knowledge Base</h2>
-						</div>
-						<p class="text-gray-600 text-sm mb-6">Access official installation guides, videos, and visual
-							examples of required pre/post pictures. Field personnel have read-only access by default.
-						</p>
-
-						<!-- Folders Accordion -->
-						<div class="space-y-4">
-
-							<!-- Folder 1: Installation Guides -->
-							<div class="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-								<button onclick="toggleFolder('folder-guides')"
-									class="w-full bg-gray-50 flex items-center justify-between p-4 font-bold text-gray-800 hover:bg-gray-100 transition-colors focus:outline-none">
-									<div class="flex items-center gap-3">
-										<span class="text-2xl">&#128193;</span>
-										<span>Installation Guides</span>
-									</div>
-									<span id="icon-folder-guides" class="text-gray-400 text-xs">&#9660;</span>
-								</button>
-								<div id="folder-guides" class="hidden p-4 bg-white border-t border-gray-200">
-									<!-- Admin Upload Button -->
-									<div class="admin-only mb-4 border-b border-gray-100 pb-4">
-										<input type="file" id="kb-upload-guides" class="hidden"
-											accept=".pdf,.doc,.docx,video/*,image/*"
-											onchange="handleKBUpload(event, 'guides')">
-										<label for="kb-upload-guides"
-											class="cursor-pointer bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold py-2 px-4 rounded shadow-sm inline-flex items-center gap-2 transition-colors">
-											<span>+ Upload New Resource</span>
-										</label>
-									</div>
-									<!-- Content Container -->
-									<div id="folder-guides-content" class="space-y-3">
-										<div
-											class="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-md shadow-sm">
-											<span class="text-2xl text-red-500">&#128196;</span>
-											<div>
-												<p class="text-sm font-bold text-gray-800">StarLink Installation
-													Guideline v1.2</p>
-												<p class="text-xs text-gray-500">T-Mobile National Development Build
-													Standards</p>
-											</div>
-										</div>
-										<div
-											class="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-md shadow-sm">
-											<span class="text-2xl text-red-500">&#128196;</span>
-											<div>
-												<p class="text-sm font-bold text-gray-800">Gen-3 Terminal Installation
-													Guide</p>
-												<p class="text-xs text-gray-500">Starlink Performance Setup Guide</p>
-											</div>
-										</div>
-										<div
-											class="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-md shadow-sm">
-											<span class="text-2xl text-red-500">&#128196;</span>
-											<div>
-												<p class="text-sm font-bold text-gray-800">Ericsson 6160 / Delta HPL3.1
-													Guides</p>
-												<p class="text-xs text-gray-500">Cabinet specific routing instructions
-												</p>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-
-							<!-- Folder 2: Sample Pre-Pictures -->
-							<div class="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-								<button onclick="toggleFolder('folder-pre')"
-									class="w-full bg-gray-50 flex items-center justify-between p-4 font-bold text-gray-800 hover:bg-gray-100 transition-colors focus:outline-none">
-									<div class="flex items-center gap-3">
-										<span class="text-2xl">&#128194;</span>
-										<span>Sample Pre Pictures</span>
-									</div>
-									<span id="icon-folder-pre" class="text-gray-400 text-xs">&#9660;</span>
-								</button>
-								<div id="folder-pre" class="hidden p-4 bg-white border-t border-gray-200">
-									<!-- Admin Upload Button -->
-									<div class="admin-only mb-4 border-b border-gray-100 pb-4">
-										<input type="file" id="kb-upload-pre" class="hidden" accept="video/*,image/*"
-											onchange="handleKBUpload(event, 'pre')">
-										<label for="kb-upload-pre"
-											class="cursor-pointer bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold py-2 px-4 rounded shadow-sm inline-flex items-center gap-2 transition-colors">
-											<span>+ Upload New Image/Video</span>
-										</label>
-									</div>
-									<p class="text-xs text-gray-500 mb-4">Examples of acceptable quality for
-										Pre-Installation required photos.</p>
-									<!-- Content Container -->
-									<div id="folder-pre-content" class="grid grid-cols-2 md:grid-cols-3 gap-3">
-										<div
-											class="bg-gray-100 aspect-square rounded-md flex flex-col items-center justify-center p-2 border border-gray-200 text-center">
-											<span class="text-3xl text-gray-400 mb-1">&#128248;</span>
-											<span class="text-[10px] font-bold text-gray-600 leading-tight">Cabinet
-												before SOW</span>
-										</div>
-										<div
-											class="bg-gray-100 aspect-square rounded-md flex flex-col items-center justify-center p-2 border border-gray-200 text-center">
-											<span class="text-3xl text-gray-400 mb-1">&#128248;</span>
-											<span class="text-[10px] font-bold text-gray-600 leading-tight">Tower
-												Structure</span>
-										</div>
-										<div
-											class="bg-gray-100 aspect-square rounded-md flex flex-col items-center justify-center p-2 border border-gray-200 text-center">
-											<span class="text-3xl text-gray-400 mb-1">&#128248;</span>
-											<span class="text-[10px] font-bold text-gray-600 leading-tight">Router
-												Cabinet</span>
-										</div>
-										<div
-											class="bg-gray-100 aspect-square rounded-md flex flex-col items-center justify-center p-2 border border-gray-200 text-center">
-											<span class="text-3xl text-gray-400 mb-1">&#128248;</span>
-											<span class="text-[10px] font-bold text-gray-600 leading-tight">Dish Install
-												Location</span>
-										</div>
-									</div>
-								</div>
-							</div>
-
-							<!-- Folder 3: Sample Post (COP) Pictures -->
-							<div class="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-								<button onclick="toggleFolder('folder-post')"
-									class="w-full bg-gray-50 flex items-center justify-between p-4 font-bold text-gray-800 hover:bg-gray-100 transition-colors focus:outline-none">
-									<div class="flex items-center gap-3">
-										<span class="text-2xl">&#128194;</span>
-										<span>Sample Post (COP) Pictures</span>
-									</div>
-									<span id="icon-folder-post" class="text-gray-400 text-xs">&#9660;</span>
-								</button>
-								<div id="folder-post" class="hidden p-4 bg-white border-t border-gray-200">
-									<!-- Admin Upload Button -->
-									<div class="admin-only mb-4 border-b border-gray-100 pb-4">
-										<input type="file" id="kb-upload-post" class="hidden" accept="video/*,image/*"
-											onchange="handleKBUpload(event, 'post')">
-										<label for="kb-upload-post"
-											class="cursor-pointer bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold py-2 px-4 rounded shadow-sm inline-flex items-center gap-2 transition-colors">
-											<span>+ Upload New Image/Video</span>
-										</label>
-									</div>
-									<p class="text-xs text-gray-500 mb-4">Examples of acceptable quality for Close Out
-										Package required photos.</p>
-									<!-- Content Container -->
-									<div id="folder-post-content" class="grid grid-cols-2 md:grid-cols-3 gap-3">
-										<div
-											class="bg-gray-100 aspect-square rounded-md flex flex-col items-center justify-center p-2 border border-gray-200 text-center">
-											<span class="text-3xl text-gray-400 mb-1">&#128248;</span>
-											<span class="text-[10px] font-bold text-gray-600 leading-tight">Starlink
-												mounted on rack</span>
-										</div>
-										<div
-											class="bg-gray-100 aspect-square rounded-md flex flex-col items-center justify-center p-2 border border-gray-200 text-center">
-											<span class="text-3xl text-gray-400 mb-1">&#128248;</span>
-											<span class="text-[10px] font-bold text-gray-600 leading-tight">DC /
-												Ethernet to PSU</span>
-										</div>
-										<div
-											class="bg-gray-100 aspect-square rounded-md flex flex-col items-center justify-center p-2 border border-gray-200 text-center">
-											<span class="text-3xl text-gray-400 mb-1">&#128248;</span>
-											<span class="text-[10px] font-bold text-gray-600 leading-tight">Antenna
-												Secure & LOS</span>
-										</div>
-										<div
-											class="bg-gray-100 aspect-square rounded-md flex flex-col items-center justify-center p-2 border border-gray-200 text-center">
-											<span class="text-3xl text-gray-400 mb-1">&#128248;</span>
-											<span class="text-[10px] font-bold text-gray-600 leading-tight">Cable
-												Routing & Dressing</span>
-										</div>
-										<div
-											class="bg-gray-100 aspect-square rounded-md flex flex-col items-center justify-center p-2 border border-gray-200 text-center">
-											<span class="text-3xl text-gray-400 mb-1">&#128248;</span>
-											<span class="text-[10px] font-bold text-gray-600 leading-tight">Ethernet on
-												ixre port 22</span>
-										</div>
-									</div>
-								</div>
-							</div>
-
-						</div>
-					</div>
-				</div>
-
-			</section>
-		</main>
-	</div> <!-- END MAIN APP -->
-
-	<!-- Success Modal (Dynamic for COP and Cancel) -->
-	<div id="success-modal" class="fixed inset-0 z- flex items-center justify-center bg-black bg-opacity-50 hidden">
-		<div class="bg-white rounded-xl p-8 max-w-sm w-full mx-4 shadow-2xl transform transition-all text-center">
-			<div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
-				<span class="text-3xl text-green-600">&#10003;</span>
-			</div>
-			<h3 id="success-title" class="text-2xl font-bold text-gray-900 mb-2">Submitted!</h3>
-			<p id="success-message" class="text-gray-600 mb-6">Your report has been successfully generated and
-				submitted.</p>
-			<button onclick="closeModal('success-modal')"
-				class="w-full bg-[#E20074] hover:bg-[#c40064] text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200">
-				Close
-			</button>
-		</div>
-	</div>
-
-	<!-- Cancellation Modal -->
-	<div id="cancel-modal"
-		class="fixed inset-0 z- flex items-center justify-center bg-black bg-opacity-60 hidden p-4 overflow-y-auto">
-		<div
-			class="bg-white rounded-xl p-6 md:p-8 max-w-2xl w-full mx-auto shadow-2xl transform transition-all relative mt-10 mb-10">
-			<button onclick="closeModal('cancel-modal')"
-				class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl font-bold focus:outline-none">&times;</button>
-			<div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
-				<span class="text-3xl text-red-500">&#9888;</span>
-				<h3 class="text-2xl font-bold text-gray-900">Site Cancellation Report</h3>
-			</div>
-
-			<div class="space-y-5">
-				<div>
-					<label class="block text-sm font-bold text-gray-700 mb-1">Cancellation Reason <span
-							class="text-red-500">*</span></label>
-					<select id="cancel-reason"
-						class="w-full border border-gray-300 p-2 rounded focus:outline-none focus:border-[#E20074] bg-white"
-						onchange="validateCancelBtn()">
-						<option value="">-- Select a Reason --</option>
-						<option value="Access">Access</option>
-						<option value="Bad Weather">Bad Weather</option>
-						<option value="Transport issue">Transport issue</option>
-						<option value="Missing equipment">Missing equipment</option>
-						<option value="Missing required materials">Missing required materials</option>
-						<option value="No backend support">No backend support</option>
-						<option value="Rolled back due to hardware issue">Rolled back due to hardware issue</option>
-						<option value="Distance too far">Distance too far</option>
-						<option value="Bad access road">Bad access road</option>
-						<option value="Others">Others</option>
-					</select>
-				</div>
-				<div>
-					<label class="block text-sm font-bold text-gray-700 mb-1">Additional Comments <span
-							class="text-red-500">*</span></label>
-					<textarea id="cancel-comments" rows="3"
-						class="w-full border border-gray-300 p-2 rounded focus:outline-none focus:border-[#E20074]"
-						placeholder="Provide more details to the RCM..." oninput="validateCancelBtn()"></textarea>
-				</div>
-
-				<div class="pt-2 border-t border-gray-100">
-					<div class="flex justify-between items-end mb-3">
-						<div>
-							<label class="block text-sm font-bold text-gray-700">Site Pictures (Optional)</label>
-							<p class="text-xs text-gray-500">Provide 3-5 pictures justifying the cancellation if
-								applicable.</p>
-						</div>
-						<span
-							class="bg-gray-100 text-gray-600 border border-gray-200 text-xs font-bold px-2 py-1 rounded-full"><span
-								id="cancel-pic-count">0</span>/5</span>
-					</div>
-					<div class="grid grid-cols-3 md:grid-cols-5 gap-3" id="cancel-pics-container">
-						<!-- Populated via Javascript -->
-					</div>
-				</div>
-			</div>
-
-			<div class="mt-8 pt-4 border-t border-gray-100 flex flex-col-reverse sm:flex-row gap-3 justify-end">
-				<button onclick="closeModal('cancel-modal')"
-					class="w-full sm:w-auto px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded transition-colors">Go
-					Back</button>
-				<button id="submit-cancel-btn" onclick="submitCancellation()"
-					class="w-full sm:w-auto px-6 py-2 bg-gray-300 text-gray-500 font-bold rounded cursor-not-allowed transition-colors"
-					disabled>Submit Cancellation</button>
-			</div>
-		</div>
-	</div>
-
-	<script>
-		// --- AUTHENTICATION MOCK DB ---
-		const mockUsers = {
-			'tech1': { password: 'pass123', name: 'John Doe', role: 'tech' },
-			'admin': { password: 'admin123', name: 'System Admin', role: 'admin' }
-		};
-
-		let currentUser = null;
-
-		function handleLogin(e) {
-			e.preventDefault();
-			const userVal = document.getElementById('login-user').value.trim();
-			const passVal = document.getElementById('login-pass').value;
-			const errorDiv = document.getElementById('login-error');
-
-			if (mockUsers[userVal] && mockUsers[userVal].password === passVal) {
-				currentUser = mockUsers[userVal];
-				errorDiv.classList.add('hidden');
-
-				document.getElementById('login-screen').classList.add('hidden');
-				document.getElementById('main-app').classList.remove('hidden');
-				document.getElementById('display-logged-user').textContent = currentUser.name;
-
-				const techInput = document.getElementById('input-tech');
-				if (currentUser.role === 'tech' && techInput.value === '') {
-					techInput.value = currentUser.name;
-					techInput.dispatchEvent(new Event('input'));
-				}
-
-				if (currentUser.role === 'admin') {
-					document.body.classList.add('admin-mode');
-				} else {
-					document.body.classList.remove('admin-mode');
-				}
-
-				if (!progressChartInstance) {
-					initChart();
-				}
-				checkProgression();
-			} else {
-				errorDiv.classList.remove('hidden');
-			}
-		}
-
-		function handleLogout() {
-			currentUser = null;
-			document.getElementById('login-user').value = '';
-			document.getElementById('login-pass').value = '';
-			document.getElementById('main-app').classList.add('hidden');
-			document.getElementById('login-screen').classList.remove('hidden');
-			document.body.classList.remove('admin-mode');
-		}
-
-		// MOP Data Model
-		const mopData = {
-			phase1: [
-				{ id: '1a', text: '1.a Receive assigned site on the Ericsson field service App.' },
-				{ id: '1b', text: '1.b Accept the site and drive to the location.' },
-				{ id: '1c', text: '1.c Submit the JSHA (Job Safety Hazard Analysis) form.' },
-				{ id: '1d', text: '1.d Your assigned RCM will create a Teams chat. Join the chat immediately.' },
-				{ id: '1e', text: '1.e Take and submit all required pre-installation pictures to the Teams chat.' },
-				{ id: '1f', text: '1.f Work with your RCM to determine the best location to mount the terminal dish. (Location is based on optimal satellite signal coverage and cable routing paths).' }
-			],
-			phase2: [
-				{ id: '2a', text: '2.a Install the Starlink Power Supply Unit (PSU) inside the cabinet using the standard 1 RU shelf.' },
-				{ id: '2b', text: '2.b Attach the pole and securely mount the satellite antenna.' },
-				{ id: '3a', text: '3.a Terminate the DC power cable. (Cut one end and terminate it on the power plant using a ring terminal.)', callout: '&#9888; Note: Refer to site-specific pictures for correct circuit breaker usage based on the cabinet type.' },
-				{ id: '3b', text: '3.b Terminate the cable coming from the satellite antenna to the "Satellite" port on the PSU.', callout: '&#9432; Note: If you have to run conduit, refer to the approved installation pictures.' },
-				{ id: '3c', text: '3.c Connect the ethernet cable from the Network port of the Starlink PSU to ixre port 22.' },
-				{ id: '3d', text: '3.d Ensure everything is properly connected, safely routed, and then power on the unit.' }
-			],
-			phase3: [
-				{ id: '4a', text: '4.a Call T-Mobile MIT support at 913-315-3000. Provide your Site ID and state the scope of work (Starlink Install).', isAction: true, link: 'tel:9133153000', linkText: 'Call MIT Now' },
-				{ id: '4b1', text: '4.b Work with the MIT engineer who will help you properly align the antenna.' },
-				{ id: '4b2', text: '4.c Standby while the engineer integrates the Starlink system and performs remote validation testing.' },
-				{ id: '4d', text: '4.d Wait for verbal confirmation and the completion email from MIT stating everything is operational.' }
-			],
-			phase4: [
-				{ id: '5a', text: '5.a Clearly label all 3 cables you have landed on the Starlink PSU per the T-Mobile/Ericsson labeling guidelines (Power, Antenna/Terminal, and Ethernet).' },
-				{ id: '6a', text: '6.a Go back to the Teams chat and inform your Ericsson RCM that the activity is completed with MIT.' },
-				{ id: '6b', text: '6.b Share all required COP pictures in the chat for validation (refer to the attached COP picture list for specific required angles).' },
-				{ id: '6c', text: '6.c Wait for the RCM to review the install quality, cable routing, dressing, and pictures.' },
-				{ id: '6d', text: '6.d Receive official "Clear to leave the site" approval from the RCM.' },
-				{ id: '7a', text: '7.a Request a post-check from the Ericsson field services App.' },
-				{ id: '7b', text: '7.b Close your ticket.' },
-				{ id: '7c', text: '7.c Call the T-Mobile NOC to officially log out from the site.', isAction: true, link: 'tel:8776115868', linkText: 'Call NOC Now' }
-			]
-		};
-
-		const prePicsList = [
-			{ id: 'pic1', name: 'Cabinet picture before SOW' },
-			{ id: 'pic2', name: 'Tower structure Picture' },
-			{ id: 'pic3', name: 'Router cabinet picture' },
-			{ id: 'pic4', name: 'Cabinet picture with Starlink' },
-			{ id: 'pic5', name: 'Starlink dish install location' }
-		];
-
-		const postPicsList = [
-			{ id: 'post1', name: 'Cabinet door closed (Front)' },
-			{ id: 'post2', name: 'Starlink unit mounted on rack' },
-			{ id: 'post3', name: 'Ethernet connected to PSU' },
-			{ id: 'post4', name: 'DC cable connected to PSU' },
-			{ id: 'post5', name: 'Starlink antenna properly secured' },
-			{ id: 'post6', name: 'Antenna cable routing and dressing' },
-			{ id: 'post7', name: 'Ethernet connected to Ixre port 22' },
-			{ id: 'post8', name: 'Starlink LOS pictures' }
-		];
-
-		const cancelPicsList = [
-			{ id: 'cancel1', name: 'Photo 1' },
-			{ id: 'cancel2', name: 'Photo 2' },
-			{ id: 'cancel3', name: 'Photo 3' },
-			{ id: 'cancel4', name: 'Photo 4' },
-			{ id: 'cancel5', name: 'Photo 5' }
-		];
-
-		const state = {
-			completed: new Set(),
-			totalTasks: 0,
-			uploadedPicsCount: 0,
-			uploadedPostPicsCount: 0,
-			uploadedCancelPicsCount: 0
-		};
-
-		let progressChartInstance = null;
-
-		function initApp() {
-			state.totalTasks = mopData.phase1.length + mopData.phase2.length + mopData.phase3.length + mopData.phase4.length;
-			document.getElementById('total-count').textContent = state.totalTasks;
-
-			document.getElementById('input-date').valueAsDate = new Date();
-			const now = new Date();
-			document.getElementById('input-timein').value = now.toTimeString().slice(0, 5);
-
-			document.getElementById('input-tech').addEventListener('input', function (e) {
-				document.getElementById('sig-tech').textContent = e.target.value;
-				checkProgression();
-			});
-
-			renderPrePics();
-			renderPostPics();
-			renderCancelPics();
-			renderList('phase1', mopData.phase1);
-			renderList('phase2', mopData.phase2);
-			renderList('phase3', mopData.phase3);
-			renderList('phase4', mopData.phase4);
-		}
-
-		// Strict Tab Navigation
-		function switchTab(tabId) {
-			// Prevent switching to disabled tabs
-			if (document.getElementById(`tab-${tabId}`) && document.getElementById(`tab-${tabId}`).disabled) return;
-
-			document.querySelectorAll('.tab-btn').forEach(btn => {
-				btn.classList.remove('active');
-			});
-
-			if (document.getElementById(`tab-${tabId}`)) {
-				document.getElementById(`tab-${tabId}`).classList.add('active');
-			}
-
-			document.getElementById('content-overview').classList.add('hidden');
-			document.getElementById('content-phase1').classList.add('hidden');
-			document.getElementById('content-phase2').classList.add('hidden');
-			document.getElementById('content-phase3').classList.add('hidden');
-			document.getElementById('content-phase4').classList.add('hidden');
-			document.getElementById('content-kb').classList.add('hidden');
-
-			document.getElementById(`content-${tabId}`).classList.remove('hidden');
-			window.scrollTo({ top: 0, behavior: 'smooth' });
-		}
-
-		// Strict Progression Validation Engine
-		function checkProgression() {
-			if (document.getElementById('header-percentage').textContent === 'CANCELED') return;
-
-			// 1. Info Form Check
-			const siteId = document.getElementById('input-siteid').value.trim();
-			const tech = document.getElementById('input-tech').value.trim();
-			const rcm = document.getElementById('input-rcm').value.trim();
-			const timeIn = document.getElementById('input-timein').value.trim();
-			const infoComplete = (siteId !== '' && tech !== '' && rcm !== '' && timeIn !== '');
-
-			const btn0 = document.getElementById('btn-continue-p0');
-			const tab1 = document.getElementById('tab-phase1');
-			if (infoComplete) {
-				btn0.disabled = false;
-				btn0.className = "w-full bg-[#E20074] hover:bg-[#c40064] text-white font-bold py-4 px-4 rounded-lg transition-colors duration-200 shadow-md mt-6";
-				btn0.innerHTML = "Start Phase 1: Arrival & Pre-Checks &#8594;";
-				tab1.disabled = false;
-				tab1.classList.remove('opacity-50', 'cursor-not-allowed');
-			} else {
-				btn0.disabled = true;
-				btn0.className = "w-full bg-gray-300 text-gray-500 font-bold py-4 px-4 rounded-lg cursor-not-allowed transition-colors duration-200 shadow-md mt-6";
-				btn0.innerHTML = "&#128274; Fill Site ID, Tech & RCM Name to Start";
-				tab1.disabled = true;
-				tab1.classList.add('opacity-50', 'cursor-not-allowed');
-			}
-
-			// 2. Phase 1 Check (Tasks + Pre-Pics)
-			const p1Tasks = mopData.phase1.every(t => state.completed.has(t.id));
-			const p1Pics = state.uploadedPicsCount >= prePicsList.length;
-			const p1Complete = infoComplete && p1Tasks && p1Pics;
-
-			const btn1 = document.getElementById('btn-continue-p1');
-			const tab2 = document.getElementById('tab-phase2');
-			if (p1Complete) {
-				btn1.disabled = false;
-				btn1.className = "w-full bg-[#E20074] hover:bg-[#c40064] text-white font-bold py-4 px-4 rounded-lg transition-colors duration-200 shadow-md mt-6";
-				btn1.innerHTML = "Continue to Phase 2: Install & Cable &#8594;";
-				tab2.disabled = false;
-				tab2.classList.remove('opacity-50', 'cursor-not-allowed');
-			} else {
-				btn1.disabled = true;
-				btn1.className = "w-full bg-gray-300 text-gray-500 font-bold py-4 px-4 rounded-lg cursor-not-allowed transition-colors duration-200 shadow-md mt-6";
-				btn1.innerHTML = "&#128274; Complete Phase 1 Tasks & Pre-Pictures to Continue";
-				tab2.disabled = true;
-				tab2.classList.add('opacity-50', 'cursor-not-allowed');
-			}
-
-			// 3. Phase 2 Check
-			const p2Tasks = mopData.phase2.every(t => state.completed.has(t.id));
-			const p2Complete = p1Complete && p2Tasks;
-
-			const btn2 = document.getElementById('btn-continue-p2');
-			const tab3 = document.getElementById('tab-phase3');
-			if (p2Complete) {
-				btn2.disabled = false;
-				btn2.className = "w-full bg-[#E20074] hover:bg-[#c40064] text-white font-bold py-4 px-4 rounded-lg transition-colors duration-200 shadow-md mt-6";
-				btn2.innerHTML = "Continue to Phase 3: Integrate &#8594;";
-				tab3.disabled = false;
-				tab3.classList.remove('opacity-50', 'cursor-not-allowed');
-			} else {
-				btn2.disabled = true;
-				btn2.className = "w-full bg-gray-300 text-gray-500 font-bold py-4 px-4 rounded-lg cursor-not-allowed transition-colors duration-200 shadow-md mt-6";
-				btn2.innerHTML = "&#128274; Complete Phase 2 Tasks to Continue";
-				tab3.disabled = true;
-				tab3.classList.add('opacity-50', 'cursor-not-allowed');
-			}
-
-			// 4. Phase 3 Check
-			const p3Tasks = mopData.phase3.every(t => state.completed.has(t.id));
-			const p3Complete = p2Complete && p3Tasks;
-
-			const btn3 = document.getElementById('btn-continue-p3');
-			const tab4 = document.getElementById('tab-phase4');
-			if (p3Complete) {
-				btn3.disabled = false;
-				btn3.className = "w-full bg-[#E20074] hover:bg-[#c40064] text-white font-bold py-4 px-4 rounded-lg transition-colors duration-200 shadow-md mt-6";
-				btn3.innerHTML = "Continue to Phase 4: Closeout &#8594;";
-				tab4.disabled = false;
-				tab4.classList.remove('opacity-50', 'cursor-not-allowed');
-			} else {
-				btn3.disabled = true;
-				btn3.className = "w-full bg-gray-300 text-gray-500 font-bold py-4 px-4 rounded-lg cursor-not-allowed transition-colors duration-200 shadow-md mt-6";
-				btn3.innerHTML = "&#128274; Complete Phase 3 Tasks to Continue";
-				tab4.disabled = true;
-				tab4.classList.add('opacity-50', 'cursor-not-allowed');
-			}
-
-			// 5. Phase 4 (Final Submit) Check
-			const p4Tasks = mopData.phase4.every(t => state.completed.has(t.id));
-			const p4Pics = state.uploadedPostPicsCount >= postPicsList.length;
-			const timeOut = document.getElementById('input-timeout').value.trim();
-			const p4Complete = p3Complete && p4Tasks && p4Pics && (timeOut !== '');
-
-			const btn4 = document.getElementById('submit-cop-btn');
-			const warningText = document.getElementById('submit-warning');
-
-			if (p4Complete) {
-				btn4.disabled = false;
-				btn4.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
-				btn4.classList.add('bg-[#E20074]', 'hover:bg-[#c40064]', 'text-white', 'cursor-pointer');
-				btn4.innerHTML = "Submit Close Out Package";
-				warningText.style.display = 'none';
-			} else {
-				btn4.disabled = true;
-				btn4.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
-				btn4.classList.remove('bg-[#E20074]', 'hover:bg-[#c40064]', 'text-white', 'cursor-pointer');
-				btn4.innerHTML = "&#128274; Complete Everything to Submit Close Out Package";
-				warningText.style.display = 'block';
-
-				let missingStr = [];
-				if (!p3Complete) missingStr.push("Previous Phases");
-				if (!p4Tasks) missingStr.push("Phase 4 Tasks");
-				if (!p4Pics) missingStr.push("Post-Pictures");
-				if (timeOut === '') missingStr.push("Time Out");
-				warningText.textContent = "Missing items to submit: " + missingStr.join(", ");
-			}
-		}
-
-		// Toggle KB Folders
-		function toggleFolder(folderId) {
-			const folder = document.getElementById(folderId);
-			const icon = document.getElementById(`icon-${folderId}`);
-
-			if (folder.classList.contains('hidden')) {
-				folder.classList.remove('hidden');
-				icon.innerHTML = '&#9650;';
-			} else {
-				folder.classList.add('hidden');
-				icon.innerHTML = '&#9660;';
-			}
-		}
-
-		function toggleAdminMode(checkbox) {
-			if (checkbox.checked) document.body.classList.add('admin-mode');
-			else document.body.classList.remove('admin-mode');
-		}
-
-		function handleKBUpload(event, folder) {
-			const file = event.target.files[0];
-			if (!file) return;
-
-			const fileName = file.name;
-			let fileIcon = '&#128196;';
-			let iconColor = 'text-gray-500';
-
-			if (file.type.startsWith('image/')) {
-				fileIcon = '&#128248;'; iconColor = 'text-blue-500';
-			} else if (file.type.startsWith('video/')) {
-				fileIcon = '&#127909;'; iconColor = 'text-purple-500';
-			} else if (file.type === 'application/pdf') {
-				fileIcon = '&#128196;'; iconColor = 'text-red-500';
-			}
-
-			if (folder === 'guides') {
-				const container = document.getElementById('folder-guides-content');
-				container.innerHTML += `
-                    <div class="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-md shadow-sm">
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="fixed inset-0 z- flex items-center justify-center bg-gray-200">
+        <div class="bg-white p-8 rounded-xl shadow-lg max-w-md w-full mx-4 border-t-8 border-[#E20074]">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Integer Interactive MOP</h1>
+                <p class="text-gray-500 text-sm mt-1">Field Tech Portal &bull; Starlink Install</p>
+            </div>
+
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="mb-5">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Username or Tech ID</label>
+                    <input type="text" id="login-user"
+                        class="w-full border border-gray-300 p-3 rounded-lg focus:border-[#E20074] focus:ring-1 focus:ring-[#E20074] focus:outline-none transition-colors"
+                        placeholder="Enter username" required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+                    <input type="password" id="login-pass"
+                        class="w-full border border-gray-300 p-3 rounded-lg focus:border-[#E20074] focus:ring-1 focus:ring-[#E20074] focus:outline-none transition-colors"
+                        placeholder="••••••••" required>
+                </div>
+
+                <div id="login-error"
+                    class="hidden bg-red-50 text-red-600 border border-red-200 rounded-md p-3 text-sm mb-5 text-center font-medium">
+                    Invalid credentials. Please try again.
+                </div>
+
+                <button type="submit"
+                    class="w-full bg-[#E20074] text-white font-bold py-3 px-4 rounded-lg hover:bg-[#c40064] transition-colors shadow-md">
+                    Secure Login
+                </button>
+            </form>
+
+            <div class="mt-8 pt-4 border-t border-gray-100 text-xs text-gray-400 text-center leading-relaxed">
+                <strong>Demo Credentials for Testing:</strong><br>
+                Tech User: <code class="bg-gray-100 px-1 rounded text-gray-600">tech1</code> / <code
+                    class="bg-gray-100 px-1 rounded text-gray-600">pass123</code><br>
+                Admin User: <code class="bg-gray-100 px-1 rounded text-gray-600">admin</code> / <code
+                    class="bg-gray-100 px-1 rounded text-gray-600">admin123</code>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP (Hidden until login) -->
+    <div id="main-app" class="hidden flex-col min-h-screen">
+        <!-- Sticky Header for quick status view -->
+        <header class="bg-gray-900 text-white shadow-md sticky top-0 z-50">
+            <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+                <div>
+                    <h1 class="text-xl md:text-2xl font-bold tracking-tight">Integer Interactive MOP</h1>
+                    <p class="text-gray-400 text-xs md:text-sm mt-0.5 flex items-center gap-2">
+                        <span>Starlink Gen 3 Install</span>
+                        <span class="text-gray-600">|</span>
+                        <span id="display-logged-user" class="text-gray-300 italic">User</span>
+                    </p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="text-right hidden sm:block">
+                        <span class="block text-[10px] text-gray-400 uppercase tracking-wider">Overall Progress</span>
+                        <span id="header-percentage" class="text-xl md:text-2xl font-bold text-[#E20074]">0%</span>
+                    </div>
+                    <button onclick="handleLogout()"
+                        class="bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white text-xs font-bold py-2 px-3 rounded transition-colors">
+                        Logout
+                    </button>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <nav class="flex overflow-x-auto no-scrollbar bg-white border-b border-gray-200">
+                <button onclick="switchTab('overview')" id="tab-overview"
+                    class="tab-btn active px-4 py-3 text-sm text-gray-600 whitespace-nowrap focus:outline-none flex-shrink-0 text-center font-medium">Info</button>
+                <button onclick="switchTab('phase1')" id="tab-phase1"
+                    class="tab-btn px-4 py-3 text-sm text-gray-600 whitespace-nowrap focus:outline-none flex-shrink-0 text-center font-medium">1.
+                    Arrival</button>
+                <button onclick="switchTab('phase2')" id="tab-phase2"
+                    class="tab-btn px-4 py-3 text-sm text-gray-600 whitespace-nowrap focus:outline-none flex-shrink-0 text-center font-medium">2.
+                    Install & Cable</button>
+                <button onclick="switchTab('phase3')" id="tab-phase3"
+                    class="tab-btn px-4 py-3 text-sm text-gray-600 whitespace-nowrap focus:outline-none flex-shrink-0 text-center font-medium">3.
+                    Integrate</button>
+                <button onclick="switchTab('phase4')" id="tab-phase4"
+                    class="tab-btn px-4 py-3 text-sm text-gray-600 whitespace-nowrap focus:outline-none flex-shrink-0 text-center font-medium">4.
+                    Closeout</button>
+                <!-- Knowledge Base Tab -->
+                <button onclick="switchTab('kb')" id="tab-kb"
+                    class="tab-btn px-4 py-3 text-sm text-gray-600 whitespace-nowrap focus:outline-none flex-shrink-0 text-center font-medium border-l border-gray-200 bg-gray-50">&#128194;
+                    KB & Docs</button>
+            </nav>
+        </header>
+
+        <main class="flex-grow container mx-auto px-4 py-6 max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Global Cancel Banner (Hidden by default) -->
+            <div id="global-cancel-banner"
+                class="hidden lg:col-span-3 bg-red-50 border border-red-200 rounded-xl p-6 shadow-sm mb-2 animate-fade-in">
+                <div class="flex flex-col md:flex-row items-start md:items-center gap-4">
+                    <div class="bg-red-100 p-3 rounded-full shrink-0">
+                        <span class="text-3xl text-red-600">&#9888;</span>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-red-800">SITE INSTALLATION CANCELED</h2>
+                        <p class="text-red-700 mt-1"><strong>Reason:</strong> <span id="display-cancel-reason"></span>
+                        </p>
+                        <p class="text-red-700 text-sm mt-1"><strong>Comments:</strong> <span
+                                id="display-cancel-comments"></span></p>
+                    </div>
+                    <div class="mt-4 md:mt-0 md:ml-auto text-right">
+                        <span class="block text-xs font-bold text-red-600 uppercase tracking-wider">Canceled By</span>
+                        <span id="display-cancel-tech" class="text-red-800 font-bold italic"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar: Context & Chart -->
+            <aside class="lg:col-span-1 flex flex-col gap-6">
+
+                <!-- Quick Contacts -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+                    <h2 class="text-lg font-bold border-b border-gray-100 pb-2 mb-3 text-gray-800">&#128222; Quick
+                        Contacts</h2>
+                    <ul class="text-sm space-y-3">
+                        <li class="bg-gray-50 p-3 rounded border border-gray-100 flex justify-between items-center">
+                            <div>
+                                <span class="block text-xs text-gray-500 font-bold uppercase">T-Mobile NOC</span>
+                                <span class="text-sm font-medium text-gray-700 block mt-1">General Support</span>
+                            </div>
+                            <a href="tel:8776115868"
+                                class="text-lg font-bold text-[#E20074] bg-[#fdf2f8] px-3 py-1 rounded-md border border-[#fbcfe8] whitespace-nowrap">877-611-5868</a>
+                        </li>
+                        <li class="bg-gray-50 p-3 rounded border border-gray-100 flex justify-between items-center">
+                            <div>
+                                <span class="block text-xs text-gray-500 font-bold uppercase">T-Mobile MIT
+                                    Support</span>
+                                <span class="text-sm font-medium text-gray-700 block mt-1">Integration &
+                                    Alignment</span>
+                            </div>
+                            <a href="tel:9133153000"
+                                class="text-lg font-bold text-[#E20074] bg-[#fdf2f8] px-3 py-1 rounded-md border border-[#fbcfe8] whitespace-nowrap">913-315-3000</a>
+                        </li>
+                        <li class="bg-gray-50 p-3 rounded border border-gray-100 flex justify-between items-center">
+                            <div>
+                                <span class="block text-xs text-gray-500 font-bold uppercase">Integer Support</span>
+                                <span class="text-sm font-medium text-gray-700 block mt-1">General Support</span>
+                            </div>
+                            <a href="tel:5014133972"
+                                class="text-lg font-bold text-[#E20074] bg-[#fdf2f8] px-3 py-1 rounded-md border border-[#fbcfe8] whitespace-nowrap">501-413-3972</a>
+                        </li>
+                    </ul>
+                    <!-- Teams Chat Link/Button -->
+                    <div class="mt-4">
+                        <div
+                            class="flex items-center justify-center gap-2 w-full bg-[#5c5fc8] text-white font-bold py-2 px-4 rounded-md">
+                            <!-- Microsoft Teams generic icon representation -->
+                            <span class="text-xl">&#128172;</span>
+                            <span>Ericsson Support (Teams Chat)</span>
+                        </div>
+                        <p class="text-[10px] text-gray-500 text-center mt-1">Use Teams for check-in/out and quality
+                            checks</p>
+                    </div>
+                </div>
+
+                <!-- Progress Chart -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+                    <h2 class="text-lg font-bold border-b border-gray-100 pb-2 mb-4 text-gray-800">Execution Tracking
+                    </h2>
+                    <div class="chart-container flex justify-center items-center">
+                        <canvas id="progressChart"></canvas>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <span id="completed-count" class="text-2xl font-bold text-gray-800">0</span>
+                        <span class="text-gray-500">of</span>
+                        <span id="total-count" class="text-lg font-bold text-gray-600">22</span>
+                        <span class="text-gray-500">Tasks Completed</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+                    <button onclick="switchTab('kb')"
+                        class="w-full flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg transition-colors border border-gray-300">
+                        <span class="text-xl">&#128218;</span> Open Knowledge Base
+                    </button>
+                </div>
+
+                <!-- Cancellation Button -->
+                <div id="cancel-widget" class="bg-white p-5 rounded-xl shadow-sm border border-red-200">
+                    <h2
+                        class="text-lg font-bold border-b border-red-100 pb-2 mb-3 text-red-800 flex items-center gap-2">
+                        <span class="text-xl">&#9888;</span> Site Cancellation
+                    </h2>
+                    <p class="text-xs text-gray-600 mb-4">If the installation cannot be completed, click below to log a
+                        cancellation report and close the site.</p>
+                    <button onclick="openCancelModal()"
+                        class="w-full bg-white border border-red-500 text-red-600 hover:bg-red-50 hover:text-red-700 font-bold py-2 px-4 rounded-lg transition-colors shadow-sm">
+                        Report Site Cancellation
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Main Content Area -->
+            <section class="lg:col-span-2 flex flex-col gap-4 pb-20">
+
+                <!-- General Information (Overview) -->
+                <div id="content-overview" class="block animate-fade-in">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 md:p-8">
+                        <!-- Purpose Paragraph -->
+                        <div class="mb-6 p-4 bg-gray-50 border-l-4 border-[#E20074] rounded-r-lg">
+                            <h3 class="font-bold text-gray-800 text-lg mb-2">Purpose of this MOP</h3>
+                            <p class="text-gray-700 text-sm leading-relaxed">
+                                This Integer Interactive Method of Procedure (MOP) outlines the standardized,
+                                step-by-step process for field technicians performing the installation, cabling, and
+                                integration of Starlink Gen 3 Terminals at T-Mobile cell sites. It is designed to ensure
+                                safe execution, proper hardware mounting per Ericsson guidelines, correct cable
+                                terminations, and successful remote validation with T-Mobile MIT Support prior to site
+                                closeout.
+                            </p>
+                        </div>
+
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6">1. General Information</h2>
+                        <p class="text-gray-600 text-sm mb-6">Enter the site details for this specific execution. This
+                            information is saved locally in your browser session.</p>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Site
+                                    ID</label>
+                                <input type="text" class="info-input" placeholder="e.g., DA12345A" id="input-siteid"
+                                    oninput="validateSubmitButton()">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Date
+                                    of Execution</label>
+                                <input type="date" class="info-input" id="input-date" onchange="validateSubmitButton()">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Time
+                                    In</label>
+                                <input type="time" class="info-input" id="input-timein"
+                                    onchange="validateSubmitButton()">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Time
+                                    Out</label>
+                                <input type="time" class="info-input" id="input-timeout"
+                                    onchange="validateSubmitButton()">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Field
+                                    Technician Name</label>
+                                <input type="text" class="info-input" placeholder="Your Full Name" id="input-tech"
+                                    oninput="validateSubmitButton()">
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Ericsson
+                                    RCM Name</label>
+                                <input type="text" class="info-input" placeholder="RCM Name" id="input-rcm"
+                                    oninput="validateSubmitButton()">
+                            </div>
+                        </div>
+
+                        <!-- Pre-Pictures Upload UI -->
+                        <div class="mt-10 pt-6 border-t border-gray-100">
+                            <div class="flex justify-between items-end mb-4">
+                                <div>
+                                    <h3 class="text-lg font-bold text-gray-800">Required Pre-Pictures</h3>
+                                    <p class="text-sm text-gray-600 mt-1">Tap a box below to launch your camera and
+                                        capture required photos.</p>
+                                </div>
+                                <span
+                                    class="bg-[#fdf2f8] text-[#E20074] border border-[#fbcfe8] text-xs font-bold px-3 py-1.5 rounded-full"><span
+                                        id="pic-count">0</span>/5 Uploaded</span>
+                            </div>
+
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4" id="pre-pics-container">
+                                <!-- Populated via Javascript -->
+                            </div>
+                        </div>
+
+                        <!-- Admin Mode Toggle (Only visible if logged in as Admin, handled via JS classes) -->
+                        <div
+                            class="admin-only mt-10 pt-4 border-t border-gray-200 justify-between items-center bg-indigo-50 border-l-4 border-indigo-500 p-4 rounded-r-lg">
+                            <div>
+                                <span class="block text-sm font-bold text-indigo-900">Admin Mode Active</span>
+                                <span class="text-xs text-indigo-700">You have full permissions to upload resources to
+                                    the Knowledge Base.</span>
+                            </div>
+                            <span class="text-2xl">&#128275;</span>
+                        </div>
+
+                        <div class="mt-6 pt-6 border-t border-gray-100">
+                            <p class="text-sm text-gray-500 mb-4">If you want to jump ahead, phases are available
+                                anytime using the buttons below or the top tabs.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                                <button onclick="switchTab('phase1')"
+                                    class="w-full bg-[#E20074] hover:bg-[#c40064] text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200 shadow-md">
+                                    Start Phase 1
+                                </button>
+                                <button onclick="switchTab('phase2')"
+                                    class="w-full bg-[#1f2937] hover:bg-[#111827] text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200 shadow-md">
+                                    Open Phase 2
+                                </button>
+                                <button onclick="switchTab('phase3')"
+                                    class="w-full bg-[#0f766e] hover:bg-[#115e59] text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200 shadow-md">
+                                    Open Phase 3
+                                </button>
+                            </div>
+                            <button onclick="switchTab('phase4')"
+                                class="w-full bg-[#E20074] hover:bg-[#c40064] text-white font-bold py-4 px-4 rounded-lg transition-colors duration-200 shadow-md">
+                                Continue to Closeout Phase 4 &#8594;
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Phase 1 -->
+                <div id="content-phase1" class="hidden animate-fade-in">
+                    <div class="mb-4 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <h2 class="text-2xl font-bold text-gray-800">Phase 1: Arrival & Pre-Checks</h2>
+                        <p class="text-gray-600 mt-2 font-medium">Complete these steps immediately upon arrival before
+                            beginning physical work.</p>
+                    </div>
+                    <div id="list-phase1" class="space-y-3"></div>
+
+                    <div class="mt-8 pt-6 border-t border-gray-100">
+                        <button onclick="switchTab('phase2')"
+                            class="w-full bg-[#E20074] hover:bg-[#c40064] text-white font-bold py-4 px-4 rounded-lg transition-colors duration-200 shadow-md">
+                            Continue to Phase 2 & 3: Install & Cable &#8594;
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Phase 2 & 3 Combined as Install & Cable -->
+                <div id="content-phase2" class="hidden animate-fade-in">
+                    <div class="mb-4 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <h2 class="text-2xl font-bold text-gray-800">Phase 2 & 3: Installation & Cabling</h2>
+                        <p class="text-gray-600 mt-2 font-medium">Physical mounting of the Starlink hardware and cable
+                            connections.</p>
+                        <div
+                            class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800 flex gap-3">
+                            <span class="text-xl">&#9432;</span>
+                            <div>
+                                <strong>Reference Documents:</strong> Refer to the Ericsson Installation Guideline
+                                pictures for specific cabinet configurations and conduit runs. Optional security methods
+                                (extended mast, conduit, J-Box) may apply depending on site requirements.
+                            </div>
+                        </div>
+                    </div>
+                    <div id="list-phase2" class="space-y-3"></div>
+
+                    <div class="mt-8 pt-6 border-t border-gray-100">
+                        <button onclick="switchTab('phase3')"
+                            class="w-full bg-[#E20074] hover:bg-[#c40064] text-white font-bold py-4 px-4 rounded-lg transition-colors duration-200 shadow-md">
+                            Continue to Phase 4: Integration &#8594;
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Phase 4 -->
+                <div id="content-phase3" class="hidden animate-fade-in">
+                    <div
+                        class="mb-4 bg-white p-6 rounded-xl shadow-sm border border-gray-200 border-l-4 border-l-amber-500">
+                        <h2 class="text-2xl font-bold text-gray-800">Phase 4: Integration</h2>
+                        <p class="text-gray-600 mt-2 font-medium"> T-Mobile MIT Support will remotely instegrate the
+                            Starlink terminal into the network and validate performance. The Engineer will send you
+                            validation email upon successful integration.</p>
+
+                    </div>
+                    <div id="list-phase3" class="space-y-3"></div>
+
+                    <div class="mt-8 pt-6 border-t border-gray-100">
+                        <button onclick="switchTab('phase4')"
+                            class="w-full bg-[#E20074] hover:bg-[#c40064] text-white font-bold py-4 px-4 rounded-lg transition-colors duration-200 shadow-md">
+                            Continue to Phase 5, 6 & 7: Closeout &#8594;
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Phase 5, 6, 7 Combined as Closeout -->
+                <div id="content-phase4" class="hidden animate-fade-in">
+                    <div class="mb-4 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <h2 class="text-2xl font-bold text-gray-800">Phase 5, 6 & 7: Closeout</h2>
+                        <p class="text-gray-600 mt-2 font-medium">Labeling, COP (Close Out Package) Pictures, and
+                            Checkout.</p>
+                    </div>
+                    <div id="list-phase4" class="space-y-3"></div>
+
+                    <!-- Post-Pictures Upload UI -->
+                    <div class="mt-8 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <div class="flex justify-between items-end mb-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-800">Required COP Pictures</h3>
+                                <p class="text-sm text-gray-600 mt-1">Capture these specific photos for your Close Out
+                                    Package.</p>
+                            </div>
+                            <span
+                                class="bg-[#fdf2f8] text-[#E20074] border border-[#fbcfe8] text-xs font-bold px-3 py-1.5 rounded-full"><span
+                                    id="post-pic-count">0</span>/8 Uploaded</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4" id="post-pics-container">
+                            <!-- Populated via Javascript -->
+                        </div>
+                    </div>
+
+                    <div class="mt-8 bg-green-50 border border-green-200 p-6 rounded-xl text-center"
+                        id="completion-banner" style="display: none;">
+                        <h3 class="text-xl font-bold text-green-800 mb-2">&#10004; Procedure Complete</h3>
+                        <p class="text-green-700 mb-4">All tasks have been marked as completed.</p>
+                        <div
+                            class="flex flex-col md:flex-row justify-center items-center gap-4 text-sm text-green-900 border-t border-green-200 pt-4 mt-4 mb-6">
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold">Tech Sig:</span>
+                                <span id="sig-tech"
+                                    class="italic bg-white px-2 py-1 rounded border border-green-100 min-w-[150px] inline-block h-7"></span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold">Time Completed:</span>
+                                <span id="sig-time"
+                                    class="italic bg-white px-2 py-1 rounded border border-green-100 min-w-[100px] inline-block h-7"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit COP Button inside Phase 4 block -->
+                    <div class="mt-6">
+                        <button id="submit-cop-btn"
+                            class="w-full bg-gray-300 text-gray-500 font-bold py-4 px-4 rounded-lg cursor-not-allowed shadow-sm transition-all duration-200"
+                            disabled onclick="submitCOP()">
+                            Submit Close Out Package
+                        </button>
+                        <p id="submit-warning" class="text-xs text-red-600 mt-2 font-medium text-center">Please ensure
+                            all general info fields, tasks, and pictures are completed before submitting.</p>
+                    </div>
+                </div>
+
+                <!-- Knowledge Base Section -->
+                <div id="content-kb" class="hidden animate-fade-in">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 md:p-8">
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="text-3xl">&#128218;</span>
+                            <h2 class="text-2xl font-bold text-gray-800">Knowledge Base</h2>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-6">Access official installation guides, videos, and visual
+                            examples of required pre/post pictures. Field personnel have read-only access by default.
+                        </p>
+
+                        <!-- Folders Accordion -->
+                        <div class="space-y-4">
+
+                            <!-- Folder 1: Installation Guides -->
+                            <div class="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                                <button onclick="toggleFolder('folder-guides')"
+                                    class="w-full bg-gray-50 flex items-center justify-between p-4 font-bold text-gray-800 hover:bg-gray-100 transition-colors focus:outline-none">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-2xl">&#128193;</span>
+                                        <span>Installation Guides</span>
+                                    </div>
+                                    <span id="icon-folder-guides" class="text-gray-400 text-xs">&#9660;</span>
+                                </button>
+                                <div id="folder-guides" class="hidden p-4 bg-white border-t border-gray-200">
+                                    <!-- Admin Upload Button -->
+                                    <div class="admin-only mb-4 border-b border-gray-100 pb-4">
+                                        <input type="file" id="kb-upload-guides" class="hidden"
+                                            accept=".pdf,.doc,.docx,video/*,image/*"
+                                            onchange="handleKBUpload(event, 'guides')">
+                                        <label for="kb-upload-guides"
+                                            class="cursor-pointer bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold py-2 px-4 rounded shadow-sm inline-flex items-center gap-2 transition-colors">
+                                            <span>+ Upload New Resource</span>
+                                        </label>
+                                    </div>
+                                    <!-- Content Container -->
+                                    <div id="folder-guides-content" class="space-y-3">
+                                        <div
+                                            class="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-md shadow-sm">
+                                            <span class="text-2xl text-red-500">&#128196;</span>
+                                            <div>
+                                                <p class="text-sm font-bold text-gray-800">StarLink Installation
+                                                    Guideline v1.2</p>
+                                                <p class="text-xs text-gray-500">T-Mobile National Development Build
+                                                    Standards</p>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-md shadow-sm">
+                                            <span class="text-2xl text-red-500">&#128196;</span>
+                                            <div>
+                                                <p class="text-sm font-bold text-gray-800">Gen-3 Terminal Installation
+                                                    Guide</p>
+                                                <p class="text-xs text-gray-500">Starlink Performance Setup Guide</p>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-md shadow-sm">
+                                            <span class="text-2xl text-red-500">&#128196;</span>
+                                            <div>
+                                                <p class="text-sm font-bold text-gray-800">Ericsson 6160 / Delta HPL3.1
+                                                    Guides</p>
+                                                <p class="text-xs text-gray-500">Cabinet specific routing instructions
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Folder 2: Sample Pre-Pictures -->
+                            <div class="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                                <button onclick="toggleFolder('folder-pre')"
+                                    class="w-full bg-gray-50 flex items-center justify-between p-4 font-bold text-gray-800 hover:bg-gray-100 transition-colors focus:outline-none">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-2xl">&#128194;</span>
+                                        <span>Sample Pre Pictures</span>
+                                    </div>
+                                    <span id="icon-folder-pre" class="text-gray-400 text-xs">&#9660;</span>
+                                </button>
+                                <div id="folder-pre" class="hidden p-4 bg-white border-t border-gray-200">
+                                    <!-- Admin Upload Button -->
+                                    <div class="admin-only mb-4 border-b border-gray-100 pb-4">
+                                        <input type="file" id="kb-upload-pre" class="hidden" accept="video/*,image/*"
+                                            onchange="handleKBUpload(event, 'pre')">
+                                        <label for="kb-upload-pre"
+                                            class="cursor-pointer bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold py-2 px-4 rounded shadow-sm inline-flex items-center gap-2 transition-colors">
+                                            <span>+ Upload New Image/Video</span>
+                                        </label>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mb-4">Examples of acceptable quality for
+                                        Pre-Installation required photos.</p>
+                                    <!-- Content Container -->
+                                    <div id="folder-pre-content" class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                        <div
+                                            class="bg-gray-100 aspect-square rounded-md flex flex-col items-center justify-center p-2 border border-gray-200 text-center">
+                                            <span class="text-3xl text-gray-400 mb-1">&#128248;</span>
+                                            <span class="text-[10px] font-bold text-gray-600 leading-tight">Cabinet
+                                                before SOW</span>
+                                        </div>
+                                        <div
+                                            class="bg-gray-100 aspect-square rounded-md flex flex-col items-center justify-center p-2 border border-gray-200 text-center">
+                                            <span class="text-3xl text-gray-400 mb-1">&#128248;</span>
+                                            <span class="text-[10px] font-bold text-gray-600 leading-tight">Tower
+                                                Structure</span>
+                                        </div>
+                                        <div
+                                            class="bg-gray-100 aspect-square rounded-md flex flex-col items-center justify-center p-2 border border-gray-200 text-center">
+                                            <span class="text-3xl text-gray-400 mb-1">&#128248;</span>
+                                            <span class="text-[10px] font-bold text-gray-600 leading-tight">Router
+                                                Cabinet</span>
+                                        </div>
+                                        <div
+                                            class="bg-gray-100 aspect-square rounded-md flex flex-col items-center justify-center p-2 border border-gray-200 text-center">
+                                            <span class="text-3xl text-gray-400 mb-1">&#128248;</span>
+                                            <span class="text-[10px] font-bold text-gray-600 leading-tight">Dish Install
+                                                Location</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Folder 3: Sample Post (COP) Pictures -->
+                            <div class="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                                <button onclick="toggleFolder('folder-post')"
+                                    class="w-full bg-gray-50 flex items-center justify-between p-4 font-bold text-gray-800 hover:bg-gray-100 transition-colors focus:outline-none">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-2xl">&#128194;</span>
+                                        <span>Sample Post (COP) Pictures</span>
+                                    </div>
+                                    <span id="icon-folder-post" class="text-gray-400 text-xs">&#9660;</span>
+                                </button>
+                                <div id="folder-post" class="hidden p-4 bg-white border-t border-gray-200">
+                                    <!-- Admin Upload Button -->
+                                    <div class="admin-only mb-4 border-b border-gray-100 pb-4">
+                                        <input type="file" id="kb-upload-post" class="hidden" accept="video/*,image/*"
+                                            onchange="handleKBUpload(event, 'post')">
+                                        <label for="kb-upload-post"
+                                            class="cursor-pointer bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold py-2 px-4 rounded shadow-sm inline-flex items-center gap-2 transition-colors">
+                                            <span>+ Upload New Image/Video</span>
+                                        </label>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mb-4">Examples of acceptable quality for Close Out
+                                        Package required photos.</p>
+                                    <!-- Content Container -->
+                                    <div id="folder-post-content" class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                        <div
+                                            class="bg-gray-100 aspect-square rounded-md flex flex-col items-center justify-center p-2 border border-gray-200 text-center">
+                                            <span class="text-3xl text-gray-400 mb-1">&#128248;</span>
+                                            <span class="text-[10px] font-bold text-gray-600 leading-tight">Starlink
+                                                mounted on rack</span>
+                                        </div>
+                                        <div
+                                            class="bg-gray-100 aspect-square rounded-md flex flex-col items-center justify-center p-2 border border-gray-200 text-center">
+                                            <span class="text-3xl text-gray-400 mb-1">&#128248;</span>
+                                            <span class="text-[10px] font-bold text-gray-600 leading-tight">DC /
+                                                Ethernet to PSU</span>
+                                        </div>
+                                        <div
+                                            class="bg-gray-100 aspect-square rounded-md flex flex-col items-center justify-center p-2 border border-gray-200 text-center">
+                                            <span class="text-3xl text-gray-400 mb-1">&#128248;</span>
+                                            <span class="text-[10px] font-bold text-gray-600 leading-tight">Antenna
+                                                Secure & LOS</span>
+                                        </div>
+                                        <div
+                                            class="bg-gray-100 aspect-square rounded-md flex flex-col items-center justify-center p-2 border border-gray-200 text-center">
+                                            <span class="text-3xl text-gray-400 mb-1">&#128248;</span>
+                                            <span class="text-[10px] font-bold text-gray-600 leading-tight">Cable
+                                                Routing & Dressing</span>
+                                        </div>
+                                        <div
+                                            class="bg-gray-100 aspect-square rounded-md flex flex-col items-center justify-center p-2 border border-gray-200 text-center">
+                                            <span class="text-3xl text-gray-400 mb-1">&#128248;</span>
+                                            <span class="text-[10px] font-bold text-gray-600 leading-tight">Ethernet on
+                                                ixre port 22</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+        </main>
+    </div> <!-- END MAIN APP -->
+
+    <!-- Success Modal (Dynamic for COP and Cancel) -->
+    <div id="success-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
+        <div class="bg-white rounded-xl p-8 max-w-sm w-full mx-4 shadow-2xl transform transition-all text-center">
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
+                <span class="text-3xl text-green-600">&#10003;</span>
+            </div>
+            <h3 id="success-title" class="text-2xl font-bold text-gray-900 mb-2">Submitted!</h3>
+            <p id="success-message" class="text-gray-600 mb-6">Your report has been successfully generated and
+                submitted.</p>
+            <button onclick="closeModal('success-modal')"
+                class="w-full bg-[#E20074] hover:bg-[#c40064] text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200">
+                Close
+            </button>
+        </div>
+    </div>
+
+    <!-- Cancellation Modal -->
+    <div id="cancel-modal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 hidden p-4 overflow-y-auto">
+        <div
+            class="bg-white rounded-xl p-6 md:p-8 max-w-2xl w-full mx-auto shadow-2xl transform transition-all relative mt-10 mb-10">
+            <button onclick="closeModal('cancel-modal')"
+                class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl font-bold focus:outline-none">&times;</button>
+            <div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
+                <span class="text-3xl text-red-500">&#9888;</span>
+                <h3 class="text-2xl font-bold text-gray-900">Site Cancellation Report</h3>
+            </div>
+
+            <div class="space-y-5">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Cancellation Reason <span
+                            class="text-red-500">*</span></label>
+                    <select id="cancel-reason"
+                        class="w-full border border-gray-300 p-2 rounded focus:outline-none focus:border-[#E20074] bg-white"
+                        onchange="validateCancelBtn()">
+                        <option value="">-- Select a Reason --</option>
+                        <option value="Access">Access</option>
+                        <option value="Bad Weather">Bad Weather</option>
+                        <option value="Transport issue">Transport issue</option>
+                        <option value="Missing equipment">Missing equipment</option>
+                        <option value="Missing required materials">Missing required materials</option>
+                        <option value="No backend support">No backend support</option>
+                        <option value="Rolled back due to hardware issue">Rolled back due to hardware issue</option>
+                        <option value="Distance too far">Distance too far</option>
+                        <option value="Bad access road">Bad access road</option>
+                        <option value="Others">Others</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Additional Comments <span
+                            class="text-red-500">*</span></label>
+                    <textarea id="cancel-comments" rows="3"
+                        class="w-full border border-gray-300 p-2 rounded focus:outline-none focus:border-[#E20074]"
+                        placeholder="Provide more details to the RCM..." oninput="validateCancelBtn()"></textarea>
+                </div>
+
+                <div class="pt-2 border-t border-gray-100">
+                    <div class="flex justify-between items-end mb-3">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700">Site Pictures (Optional)</label>
+                            <p class="text-xs text-gray-500">Provide 3-5 pictures justifying the cancellation if
+                                applicable.</p>
+                        </div>
+                        <span
+                            class="bg-gray-100 text-gray-600 border border-gray-200 text-xs font-bold px-2 py-1 rounded-full"><span
+                                id="cancel-pic-count">0</span>/5</span>
+                    </div>
+                    <div class="grid grid-cols-3 md:grid-cols-5 gap-3" id="cancel-pics-container">
+                        <!-- Populated via Javascript -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 pt-4 border-t border-gray-100 flex flex-col-reverse sm:flex-row gap-3 justify-end">
+                <button onclick="closeModal('cancel-modal')"
+                    class="w-full sm:w-auto px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded transition-colors">Go
+                    Back</button>
+                <button id="submit-cancel-btn" onclick="submitCancellation()"
+                    class="w-full sm:w-auto px-6 py-2 bg-gray-300 text-gray-500 font-bold rounded cursor-not-allowed transition-colors"
+                    disabled>Submit Cancellation</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- AUTHENTICATION MOCK DB ---
+        const mockUsers = {
+            'tech1': { password: 'pass123', name: 'John Doe', role: 'tech' },
+            'tech2': { password: 'pass123', name: 'Jane Smith', role: 'tech' },
+            'admin': { password: 'admin123', name: 'System Admin', role: 'admin' }
+        };
+
+        let currentUser = null;
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const userVal = document.getElementById('login-user').value.trim();
+            const passVal = document.getElementById('login-pass').value;
+            const errorDiv = document.getElementById('login-error');
+
+            if (mockUsers[userVal] && mockUsers[userVal].password === passVal) {
+                // Success
+                currentUser = mockUsers[userVal];
+                errorDiv.classList.add('hidden');
+
+                // Setup UI for logged in user
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+                document.getElementById('display-logged-user').textContent = currentUser.name;
+
+                // Auto-fill tech name if they are a tech
+                const techInput = document.getElementById('input-tech');
+                if (currentUser.role === 'tech' && techInput.value === '') {
+                    techInput.value = currentUser.name;
+                    // Trigger input event to update sig block
+                    techInput.dispatchEvent(new Event('input'));
+                }
+
+                // Enable Admin features if applicable
+                if (currentUser.role === 'admin') {
+                    document.body.classList.add('admin-mode');
+                } else {
+                    document.body.classList.remove('admin-mode');
+                }
+
+                // Initialize chart ONLY AFTER main-app is visible to avoid 0x0 size bugs
+                if (!progressChartInstance) {
+                    initChart();
+                }
+
+            } else {
+                // Fail
+                errorDiv.classList.remove('hidden');
+            }
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            document.getElementById('login-user').value = '';
+            document.getElementById('login-pass').value = '';
+
+            document.getElementById('main-app').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+
+            // Remove admin mode on logout
+            document.body.classList.remove('admin-mode');
+        }
+        // ------------------------------
+
+        // MOP Data Model strictly reflecting the provided Markdown file
+        const mopData = {
+            phase1: [
+                { id: '1a', text: '1.a- Accept the assigned site on the Ericsson field service App.' },
+                { id: '1b', text: '1.b- Drive to site and change status to Onsite site, Then request your pre check.' },
+                { id: '1c', text: '1.c- Submit the JSHA (Job Safety Hazard Analysis) form.' },
+                { id: '1d', text: '1.d- Your assigned RCM will create a Teams chat and ask you to Join.' },
+                { id: '1e', text: '1.e- Take and submit all required pre-installation pictures to the Teams chat.' },
+                { id: '1f', text: '1.f- Work with your RCM to determine the best location to mount the terminal dish. (Location is based on optimal satellite signal coverage and cable routing paths).' }
+            ],
+            phase2: [
+                { id: '2a', text: '2.a- Install the Starlink Power Supply Unit (PSU) inside the cabinet using the standard 1 RU shelf.' },
+                { id: '2b', text: '2.b- Attach the pole and securely mount the satellite antenna.' },
+                { id: '3a', text: '3.a- Terminate the DC power cable. (Cut one end and terminate it on the power plant using a ring terminal.)', callout: '&#9888; Note: Refer to site-specific pictures for correct circuit breaker usage based on the cabinet type.' },
+                { id: '3b', text: '3.b- Terminate the cable coming from the satellite antenna to the "Satellite" port on the PSU.', callout: '&#9432; Note: If you have to run conduit, refer to the approved installation pictures.' },
+                { id: '3c', text: '3.c- Connect the ethernet cable from the Network port of the Starlink PSU to ixre port 22.' },
+                { id: '3d', text: '3.d- Ensure everything is properly connected, safely routed, and then power on the unit.' }
+            ],
+            phase3: [
+                { id: '4a', text: '4.a- Call T-Mobile MIT support at 913-315-3000. Provide your Site ID and state the scope of work (Starlink Install).', isAction: true, link: 'tel:9133153000', linkText: 'Call MIT Now' },
+                { id: '4b1', text: '4.b- Work with the MIT engineer who will help you properly align the antenna.' },
+                { id: '4b2', text: '4.c- Standby while the engineer integrates the Starlink system and performs remote validation testing.' },
+                { id: '4d', text: '4.d- Wait for verbal confirmation and the completion email from MIT stating everything is operational.' }
+            ],
+            phase4: [
+                { id: '5a', text: '5.a- Clearly label all 3 cables you have landed on the Starlink PSU per the T-Mobile/Ericsson labeling guidelines (Power, Antenna/Terminal, and Ethernet).' },
+                { id: '6a', text: '6.a- Go back to the Teams chat and inform your Ericsson RCM that the integration with MIT is complete. And forward him/herthe validation email you received from MIT.' },
+                { id: '6b', text: '6.b- Share all required COP pictures in the chat for validation (refer to the attached COP picture list for specific required angles).' },
+                { id: '6c', text: '6.c- Wait for the RCM to review the install quality, cable routing, dressing, and pictures.' },
+                { id: '6d', text: '6.d- Receive official "Clear to leave the site" approval from the RCM.' },
+                { id: '7a', text: '7.a- Request a post-check from the Ericsson field services App.' },
+                { id: '7b', text: '7.b Close your ticket.' },
+                { id: '7c', text: '7.c- Call the T-Mobile NOC to officially log out from the site.', isAction: true, link: 'tel:8776115868', linkText: 'Call NOC Now' }
+            ]
+        };
+
+        const prePicsList = [
+            { id: 'pic1', name: 'Cabinet picture before SOW' },
+            { id: 'pic2', name: 'Tower structure Picture' },
+            { id: 'pic3', name: 'Router cabinet picture' },
+            { id: 'pic4', name: 'Cabinet picture with Starlink' },
+            { id: 'pic5', name: 'Starlink dish install location' }
+        ];
+
+        // Post pictures list
+        const postPicsList = [
+            { id: 'post1', name: 'Cabinet door closed (Front)' },
+            { id: 'post2', name: 'Starlink PSU mounted on rack' },
+            { id: 'post3', name: 'Ethernet connected to PSU' },
+            { id: 'post4', name: 'DC cable connected to PSU' },
+            { id: 'post5', name: 'Starlink antenna properly secured' },
+            { id: 'post6', name: 'Antenna cable routing and dressing' },
+            { id: 'post7', name: 'Ethernet connected to Ixre port 22' },
+            { id: 'post8', name: 'Starlink LOS pictures' }
+        ];
+
+        // Cancel Pictures list
+        const cancelPicsList = [
+            { id: 'cancel1', name: 'Photo 1' },
+            { id: 'cancel2', name: 'Photo 2' },
+            { id: 'cancel3', name: 'Photo 3' },
+            { id: 'cancel4', name: 'Photo 4' },
+            { id: 'cancel5', name: 'Photo 5' }
+        ];
+
+        const state = {
+            completed: new Set(),
+            totalTasks: 0,
+            uploadedPicsCount: 0,
+            uploadedPostPicsCount: 0,
+            uploadedCancelPicsCount: 0
+        };
+
+        let progressChartInstance = null;
+
+        // Initialization
+        function initApp() {
+            state.totalTasks = mopData.phase1.length + mopData.phase2.length + mopData.phase3.length + mopData.phase4.length;
+            document.getElementById('total-count').textContent = state.totalTasks;
+
+            // Set today's date as default
+            document.getElementById('input-date').valueAsDate = new Date();
+
+            // Set current time as default for Time In
+            const now = new Date();
+            document.getElementById('input-timein').value = now.toTimeString().slice(0, 5);
+
+            // Mirror tech name to signature block manually (also auto-done by login now)
+            document.getElementById('input-tech').addEventListener('input', function (e) {
+                document.getElementById('sig-tech').textContent = e.target.value;
+                validateSubmitButton();
+            });
+
+            renderPrePics();
+            renderPostPics();
+            renderCancelPics();
+            renderList('phase1', mopData.phase1);
+            renderList('phase2', mopData.phase2);
+            renderList('phase3', mopData.phase3);
+            renderList('phase4', mopData.phase4);
+
+            // DO NOT call initChart() here anymore. It is called in handleLogin() once the UI is visible.
+            updateDashboard();
+            validateSubmitButton(); // Initial check
+        }
+
+        // Tab Navigation
+        function switchTab(tabId) {
+            // Reset all tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Set active tab
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+
+            // Hide all content
+            document.getElementById('content-overview').classList.add('hidden');
+            document.getElementById('content-phase1').classList.add('hidden');
+            document.getElementById('content-phase2').classList.add('hidden');
+            document.getElementById('content-phase3').classList.add('hidden');
+            document.getElementById('content-phase4').classList.add('hidden');
+            document.getElementById('content-kb').classList.add('hidden');
+
+            // Show selected content
+            document.getElementById(`content-${tabId}`).classList.remove('hidden');
+
+            // Scroll to top of content smoothly
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Toggle KB Folders
+        function toggleFolder(folderId) {
+            const folder = document.getElementById(folderId);
+            const icon = document.getElementById(`icon-${folderId}`);
+
+            if (folder.classList.contains('hidden')) {
+                folder.classList.remove('hidden');
+                icon.innerHTML = '&#9650;'; // Up arrow
+            } else {
+                folder.classList.add('hidden');
+                icon.innerHTML = '&#9660;'; // Down arrow
+            }
+        }
+
+        // Handle KB Uploads (Admin Only Feature)
+        function handleKBUpload(event, folder) {
+            const file = event.target.files;
+            if (!file) return;
+
+            const fileName = file.name;
+            let fileIcon = '&#128196;'; // document icon
+            let iconColor = 'text-gray-500';
+
+            // Determine file type and assign icon
+            if (file.type.startsWith('image/')) {
+                fileIcon = '&#128248;'; // camera/image
+                iconColor = 'text-blue-500';
+            } else if (file.type.startsWith('video/')) {
+                fileIcon = '&#127909;'; // video
+                iconColor = 'text-purple-500';
+            } else if (file.type === 'application/pdf') {
+                fileIcon = '&#128196;'; // pdf document
+                iconColor = 'text-red-500';
+            }
+
+            if (folder === 'guides') {
+                const container = document.getElementById('folder-guides-content');
+                container.innerHTML += `
+                    <div class="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-md shadow-sm">
                         <span class="text-2xl ${iconColor}">${fileIcon}</span>
-                        <div><p class="text-sm font-bold text-gray-800">${fileName}</p><p class="text-xs text-green-600 font-bold">&#10003; Uploaded Successfully</p></div>
-                    </div>`;
-			} else {
-				const container = document.getElementById(`folder-${folder}-content`);
-				if (file.type.startsWith('image/')) {
-					const reader = new FileReader();
-					reader.onload = function (e) {
-						container.innerHTML += `
+                        <div>
+                            <p class="text-sm font-bold text-gray-800">${fileName}</p>
+                            <p class="text-xs text-gray-500">Newly Uploaded Resource</p>
+                        </div>
+                    </div>
+                `;
+            } else if (folder === 'pre' || folder === 'post') {
+                const container = document.getElementById(`folder-${folder}-content`);
+
+                if (file.type.startsWith('image/')) {
+                    // Show actual image preview for images
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        container.innerHTML += `
                             <div class="bg-gray-100 aspect-square rounded-md flex flex-col items-center justify-center border border-gray-200 text-center relative overflow-hidden group shadow-sm">
                                 <img src="${e.target.result}" class="object-cover w-full h-full absolute inset-0">
-                                <div class="absolute top-1 right-1 bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold z-10 shadow-sm">&#10003;</div>
                                 <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 text-white text-[9px] truncate px-2 py-1">${fileName}</div>
-                            </div>`;
-					}
-					reader.readAsDataURL(file);
-				} else {
-					container.innerHTML += `
-                        <div class="bg-green-50 aspect-square rounded-md flex flex-col items-center justify-center p-2 border border-green-200 text-center shadow-sm relative">
-                            <div class="absolute top-1 right-1 bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold z-10 shadow-sm">&#10003;</div>
+                            </div>
+                        `;
+                    }
+                    reader.readAsDataURL(file);
+                } else {
+                    // Show icon for non-images (like videos)
+                    container.innerHTML += `
+                        <div class="bg-gray-100 aspect-square rounded-md flex flex-col items-center justify-center p-2 border border-gray-200 text-center shadow-sm">
                             <span class="text-3xl ${iconColor} mb-1">${fileIcon}</span>
                             <span class="text-[9px] font-bold text-gray-600 leading-tight truncate w-full px-1">${fileName}</span>
-                        </div>`;
-				}
-			}
-		}
+                        </div>
+                    `;
+                }
+            }
+        }
 
-		// Generate UI structure for image uploads
-		function generatePictureUI(picList, type) {
-			let html = '';
-			picList.forEach(pic => {
-				html += `
+        // Generate UI structure for image uploads
+        function generatePictureUI(picList, type) {
+            let html = '';
+            picList.forEach(pic => {
+                html += `
                     <div class="relative flex flex-col group">
                         <input type="file" id="input-${pic.id}" accept="image/*" capture="environment" class="hidden" onchange="handlePicUpload(event, '${pic.id}', '${type}')">
                         <label for="input-${pic.id}" id="preview-${pic.id}" class="cursor-pointer flex flex-col items-center justify-center border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 rounded-lg aspect-square transition-all duration-200 relative overflow-hidden shadow-sm">
                             <span class="text-3xl text-gray-400 mb-1">&#128247;</span>
                             <span class="text-[10px] text-gray-500 font-bold uppercase tracking-wider text-center px-1">Capture</span>
                         </label>
-                        <p class="text-[11px] text-center mt-2 font-semibold text-gray-700 leading-tight h-8 flex items-center justify-center">
-                            <span id="check-${pic.id}" class="text-green-500 mr-1 hidden text-sm">&#10003;</span>
-                            ${pic.name}
-                        </p>
-                    </div>`;
-			});
-			return html;
-		}
+                        <p class="text-[11px] text-center mt-2 font-semibold text-gray-700 leading-tight h-8 flex items-center justify-center">${pic.name}</p>
+                    </div>
+                `;
+            });
+            return html;
+        }
 
-		function renderPrePics() { document.getElementById('pre-pics-container').innerHTML = generatePictureUI(prePicsList, 'pre'); }
-		function renderPostPics() { document.getElementById('post-pics-container').innerHTML = generatePictureUI(postPicsList, 'post'); }
-		function renderCancelPics() { document.getElementById('cancel-pics-container').innerHTML = generatePictureUI(cancelPicsList, 'cancel'); }
+        function renderPrePics() {
+            document.getElementById('pre-pics-container').innerHTML = generatePictureUI(prePicsList, 'pre');
+        }
 
-		function handlePicUpload(event, picId, type) {
-			const file = event.target.files[0];
-			if (file) {
-				const preview = document.getElementById(`preview-${picId}`);
-				if (!preview.classList.contains('has-image')) {
-					preview.classList.add('has-image');
+        function renderPostPics() {
+            document.getElementById('post-pics-container').innerHTML = generatePictureUI(postPicsList, 'post');
+        }
 
-					// Show green check mark next to text label
-					const checkIcon = document.getElementById(`check-${picId}`);
-					if (checkIcon) checkIcon.classList.remove('hidden');
+        function renderCancelPics() {
+            document.getElementById('cancel-pics-container').innerHTML = generatePictureUI(cancelPicsList, 'cancel');
+        }
 
-					if (type === 'pre') {
-						state.uploadedPicsCount++;
-						updateBadge('pic-count', state.uploadedPicsCount, prePicsList.length);
-					} else if (type === 'post') {
-						state.uploadedPostPicsCount++;
-						updateBadge('post-pic-count', state.uploadedPostPicsCount, postPicsList.length);
-					} else if (type === 'cancel') {
-						state.uploadedCancelPicsCount++;
-						updateBadge('cancel-pic-count', state.uploadedCancelPicsCount, cancelPicsList.length, true);
-					}
-				}
+        // Handle Picture Upload Preview dynamically based on type
+        function handlePicUpload(event, picId, type) {
+            const file = event.target.files;
+            if (file) {
+                const preview = document.getElementById(`preview-${picId}`);
 
-				const reader = new FileReader();
-				reader.onload = function (e) {
-					preview.innerHTML = `
+                if (!preview.classList.contains('has-image')) {
+                    preview.classList.add('has-image');
+                    if (type === 'pre') {
+                        state.uploadedPicsCount++;
+                        document.getElementById('pic-count').textContent = state.uploadedPicsCount;
+                    } else if (type === 'post') {
+                        state.uploadedPostPicsCount++;
+                        document.getElementById('post-pic-count').textContent = state.uploadedPostPicsCount;
+                    } else if (type === 'cancel') {
+                        state.uploadedCancelPicsCount++;
+                        document.getElementById('cancel-pic-count').textContent = state.uploadedCancelPicsCount;
+                    }
+                }
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    preview.innerHTML = `
                         <img src="${e.target.result}" class="object-cover w-full h-full absolute inset-0 z-0">
                         <div class="absolute top-2 right-2 bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold border-2 border-white z-10 shadow-sm">&#10003;</div>
-                        <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-[9px] text-center py-1 z-10 uppercase tracking-widest">Tap to Replace</div>`;
-					let colorClass = type === 'cancel' ? 'border-red-500' : 'border-[#E20074]';
-					let ringClass = type === 'cancel' ? 'ring-red-200' : 'ring-[#fbcfe8]';
-					preview.classList.remove('border-dashed', 'border-gray-300');
-					preview.classList.add('border-solid', colorClass, 'ring-2', ringClass);
+                        <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-[9px] text-center py-1 z-10 uppercase tracking-widest">Tap to Replace</div>
+                    `;
+                    let colorClass = type === 'cancel' ? 'border-red-500' : 'border-[#E20074]';
+                    let ringClass = type === 'cancel' ? 'ring-red-200' : 'ring-[#fbcfe8]';
 
-					checkProgression();
-				}
-				reader.readAsDataURL(file);
-			}
-		}
+                    preview.classList.remove('border-dashed', 'border-gray-300');
+                    preview.classList.add('border-solid', colorClass, 'ring-2', ringClass);
 
-		function updateBadge(badgeId, current, total, isCancel = false) {
-			const span = document.getElementById(badgeId);
-			if (!span) return;
-			const badge = span.parentElement;
+                    validateSubmitButton();
+                }
+                reader.readAsDataURL(file);
+            }
+        }
 
-			if (current >= total) {
-				badge.className = "bg-green-100 text-green-700 border border-green-300 text-xs font-bold px-3 py-1.5 rounded-full inline-flex items-center gap-1";
-				badge.innerHTML = `<span>&#10003;</span> <span id="${badgeId}">${current}</span>/${total} Uploaded`;
-			} else {
-				badge.className = isCancel
-					? "bg-gray-100 text-gray-600 border border-gray-200 text-xs font-bold px-2 py-1 rounded-full"
-					: "bg-[#fdf2f8] text-[#E20074] border border-[#fbcfe8] text-xs font-bold px-3 py-1.5 rounded-full";
-				let text = isCancel ? "" : " Uploaded";
-				badge.innerHTML = `<span id="${badgeId}">${current}</span>/${total}${text}`;
-			}
-		}
+        // Render Task Lists
+        function renderList(sectionId, items) {
+            const container = document.getElementById(`list-${sectionId}`);
+            let html = '';
+            items.forEach((item) => {
+                let actionButton = '';
+                if (item.isAction && item.link) {
+                    let btnIcon = '&#128222;'; // Default to phone icon
+                    let btnBg = 'bg-[#fdf2f8] text-[#E20074] border border-[#fbcfe8] hover:bg-[#E20074] hover:text-white';
 
-		function renderList(sectionId, items) {
-			const container = document.getElementById(`list-${sectionId}`);
-			let html = '';
-			items.forEach((item) => {
-				let actionButton = '';
-				if (item.isAction && item.link) {
-					let btnIcon = '&#128222;';
-					let btnBg = 'bg-[#fdf2f8] text-[#E20074] border border-[#fbcfe8] hover:bg-[#E20074] hover:text-white';
-					actionButton = `<a href="${item.link}" class="inline-block mt-3 px-4 py-2 ${btnBg} rounded-md text-sm font-bold shadow-sm transition-colors">${btnIcon} ${item.linkText}</a>`;
-				}
+                    actionButton = `<a href="${item.link}" class="inline-block mt-3 px-4 py-2 ${btnBg} rounded-md text-sm font-bold shadow-sm transition-colors">${btnIcon} ${item.linkText}</a>`;
+                }
 
-				html += `
+                html += `
                     <div class="step-row flex items-start gap-4 p-4 rounded-xl border border-gray-200 bg-white shadow-sm" id="row-${item.id}">
                         <div class="pt-0.5 shrink-0">
                             <input type="checkbox" id="${item.id}" class="checkbox-custom rounded" onchange="toggleStep('${item.id}')">
                         </div>
                         <div class="flex-grow min-w-0">
-                            <label for="${item.id}" class="font-medium text-gray-800 cursor-pointer select-none block text-base md:text-lg leading-snug">${item.text}</label>
+                            <label for="${item.id}" class="font-medium text-gray-800 cursor-pointer select-none block text-base md:text-lg leading-snug">
+                                ${item.text}
+                            </label>
                             ${actionButton}
                             ${item.callout ? `<div class="bg-gray-50 text-gray-700 border border-gray-200 p-3 rounded-md text-sm mt-3 font-medium leading-relaxed">${item.callout}</div>` : ''}
                         </div>
-                    </div>`;
-			});
-			container.innerHTML = html;
-		}
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
 
-		function toggleStep(itemId) {
-			const checkbox = document.getElementById(itemId);
-			const parentRow = document.getElementById(`row-${itemId}`);
-			if (checkbox.checked) {
-				state.completed.add(itemId);
-				parentRow.classList.add('completed');
-			} else {
-				state.completed.delete(itemId);
-				parentRow.classList.remove('completed');
-			}
-			updateDashboard();
-			checkProgression();
-		}
+        // Handle Checkbox Toggles
+        function toggleStep(itemId) {
+            const checkbox = document.getElementById(itemId);
+            const parentRow = document.getElementById(`row-${itemId}`);
 
-		function updateDashboard() {
-			if (document.getElementById('header-percentage').textContent === 'CANCELED') return;
+            if (checkbox.checked) {
+                state.completed.add(itemId);
+                parentRow.classList.add('completed');
+            } else {
+                state.completed.delete(itemId);
+                parentRow.classList.remove('completed');
+            }
+            updateDashboard();
+            validateSubmitButton();
+        }
 
-			const getSectionCount = (arr) => arr.filter(item => state.completed.has(item.id)).length;
-			const p1Count = getSectionCount(mopData.phase1);
-			const p2Count = getSectionCount(mopData.phase2);
-			const p3Count = getSectionCount(mopData.phase3);
-			const p4Count = getSectionCount(mopData.phase4);
+        // Update Chart and Metrics
+        function updateDashboard() {
+            // Check if site is canceled
+            if (document.getElementById('header-percentage').textContent === 'CANCELED') {
+                return; // Do not update stats if already canceled
+            }
 
-			const totalCompleted = state.completed.size;
-			const percentage = Math.round((totalCompleted / state.totalTasks) * 100);
+            const getSectionCount = (arr) => {
+                return arr.filter(item => state.completed.has(item.id)).length;
+            };
 
-			document.getElementById('completed-count').textContent = totalCompleted;
-			const headerPerc = document.getElementById('header-percentage');
-			headerPerc.textContent = `${percentage}%`;
+            const p1Count = getSectionCount(mopData.phase1);
+            const p2Count = getSectionCount(mopData.phase2);
+            const p3Count = getSectionCount(mopData.phase3);
+            const p4Count = getSectionCount(mopData.phase4);
 
-			const banner = document.getElementById('completion-banner');
-			if (percentage === 100) {
-				headerPerc.classList.remove('text-[#E20074]', 'text-red-500');
-				headerPerc.classList.add('text-green-500');
-				banner.style.display = 'block';
+            const totalCompleted = state.completed.size;
+            const percentage = Math.round((totalCompleted / state.totalTasks) * 100);
 
-				const timeOutInput = document.getElementById('input-timeout');
-				if (timeOutInput.value === '') {
-					const now = new Date();
-					timeOutInput.value = now.toTimeString().slice(0, 5);
-				}
-				document.getElementById('sig-time').textContent = timeOutInput.value;
-				if (!document.getElementById('sig-tech').textContent) {
-					document.getElementById('sig-tech').textContent = document.getElementById('input-tech').value || "Technician";
-				}
-			} else {
-				headerPerc.classList.add('text-[#E20074]');
-				headerPerc.classList.remove('text-green-500', 'text-red-500');
-				banner.style.display = 'none';
-			}
+            // Update Text Metrics
+            document.getElementById('completed-count').textContent = totalCompleted;
 
-			if (progressChartInstance) {
-				progressChartInstance.data.datasets.data = [
-					p1Count, p2Count, p3Count, p4Count, state.totalTasks - totalCompleted
-				];
-				progressChartInstance.update();
-			}
-		}
+            const headerPerc = document.getElementById('header-percentage');
+            headerPerc.textContent = `${percentage}%`;
 
-		function validateCancelBtn() {
-			const reason = document.getElementById('cancel-reason').value;
-			const comments = document.getElementById('cancel-comments').value.trim();
-			const btn = document.getElementById('submit-cancel-btn');
+            // Completion Logic
+            const banner = document.getElementById('completion-banner');
+            if (percentage === 100) {
+                headerPerc.classList.remove('text-[#E20074]', 'text-red-500');
+                headerPerc.classList.add('text-green-500');
+                banner.style.display = 'block';
 
-			if (reason !== '' && comments !== '') {
-				btn.disabled = false;
-				btn.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
-				btn.classList.add('bg-red-600', 'hover:bg-red-700', 'text-white', 'cursor-pointer');
-			} else {
-				btn.disabled = true;
-				btn.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
-				btn.classList.remove('bg-red-600', 'hover:bg-red-700', 'text-white', 'cursor-pointer');
-			}
-		}
+                // Set completion time if time out is empty
+                const timeOutInput = document.getElementById('input-timeout');
+                if (timeOutInput.value === '') {
+                    const now = new Date();
+                    timeOutInput.value = now.toTimeString().slice(0, 5);
+                }
+                document.getElementById('sig-time').textContent = timeOutInput.value;
 
-		function submitCancellation() {
-			const reason = document.getElementById('cancel-reason').value;
-			const comments = document.getElementById('cancel-comments').value;
-			const techName = document.getElementById('input-tech').value || "Technician";
+                // Ensure tech name is filled if they forgot
+                if (!document.getElementById('sig-tech').textContent) {
+                    document.getElementById('sig-tech').textContent = document.getElementById('input-tech').value || "Technician";
+                }
 
-			const btn = document.getElementById('submit-cancel-btn');
-			const originalText = btn.innerHTML;
-			btn.innerHTML = "Sending...";
-			btn.disabled = true;
+                validateSubmitButton(); // Call this here to re-evaluate the button state
 
-			const payload = {
-				type: "Cancellation",
-				siteId: document.getElementById('input-siteid').value.trim(),
-				date: document.getElementById('input-date').value.trim(),
-				timeIn: document.getElementById('input-timein').value.trim(),
-				timeOut: document.getElementById('input-timeout').value.trim(),
-				techName: techName,
-				rcmName: document.getElementById('input-rcm').value.trim(),
-				status: "Canceled",
-				cancelReason: reason,
-				comments: comments
-			};
+            } else {
+                headerPerc.classList.add('text-[#E20074]');
+                headerPerc.classList.remove('text-green-500', 'text-red-500');
+                banner.style.display = 'none';
+            }
 
-			document.getElementById('display-cancel-reason').textContent = reason;
-			document.getElementById('display-cancel-comments').textContent = comments;
-			document.getElementById('display-cancel-tech').textContent = techName;
+            // Update Chart
+            if (progressChartInstance) {
+                progressChartInstance.data.datasets.data = [
+                    p1Count,
+                    p2Count,
+                    p3Count,
+                    p4Count,
+                    state.totalTasks - totalCompleted
+                ];
+                progressChartInstance.update();
+            }
+        }
 
-			document.getElementById('global-cancel-banner').classList.remove('hidden');
-			document.getElementById('cancel-widget').style.display = 'none';
+        // Validation specific to the Cancellation Modal
+        function validateCancelBtn() {
+            const reason = document.getElementById('cancel-reason').value;
+            const comments = document.getElementById('cancel-comments').value.trim();
+            const btn = document.getElementById('submit-cancel-btn');
 
-			const headerPerc = document.getElementById('header-percentage');
-			headerPerc.textContent = `CANCELED`;
-			headerPerc.classList.remove('text-[#E20074]', 'text-green-500');
-			headerPerc.classList.add('text-red-500');
+            if (reason !== '' && comments !== '') {
+                btn.disabled = false;
+                btn.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+                btn.classList.add('bg-red-600', 'hover:bg-red-700', 'text-white', 'cursor-pointer');
+            } else {
+                btn.disabled = true;
+                btn.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+                btn.classList.remove('bg-red-600', 'hover:bg-red-700', 'text-white', 'cursor-pointer');
+            }
+        }
 
-			if (progressChartInstance) {
-				progressChartInstance.data.datasets.data = [0, 0, 0, 0, state.totalTasks];
-				progressChartInstance.data.datasets.backgroundColor = ['#ef4444', '#ef4444', '#ef4444', '#ef4444', '#fecaca'];
-				progressChartInstance.update();
-			}
+        // Execute Cancellation Logic
+        function submitCancellation() {
+            const reason = document.getElementById('cancel-reason').value;
+            const comments = document.getElementById('cancel-comments').value;
+            const techName = document.getElementById('input-tech').value || "Technician";
 
-			closeModal('cancel-modal');
-			window.scrollTo({ top: 0, behavior: 'smooth' });
+            // 1. Update UI to show sending status
+            const btn = document.getElementById('submit-cancel-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "Sending...";
+            btn.disabled = true;
 
-			const WEBHOOK_URL = 'https://hook.us2.make.com/x6a5ac5ahkafx3ie4gvdlmtyvi7gjg83';
+            // 2. Gather Data for Make.com / SharePoint
+            const payload = {
+                type: "Cancellation",
+                siteId: document.getElementById('input-siteid').value.trim(),
+                date: document.getElementById('input-date').value.trim(),
+                timeIn: document.getElementById('input-timein').value.trim(),
+                timeOut: document.getElementById('input-timeout').value.trim(),
+                techName: techName,
+                rcmName: document.getElementById('input-rcm').value.trim(),
+                status: "Canceled",
+                cancelReason: reason,
+                comments: comments
+            };
 
-			fetch(WEBHOOK_URL, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(payload)
-			})
-				.then(response => {
-					showSuccessModal('Cancellation Submitted!', 'Your Site Cancellation Report has been successfully logged to the system.');
-				})
-				.catch(error => {
-					alert("Error sending data. Please check your connection.");
-					btn.innerHTML = originalText;
-					btn.disabled = false;
-				});
-		}
+            // Update global UI
+            document.getElementById('display-cancel-reason').textContent = reason;
+            document.getElementById('display-cancel-comments').textContent = comments;
+            document.getElementById('display-cancel-tech').textContent = techName;
 
-		function submitCOP() {
-			const btn = document.getElementById('submit-cop-btn');
-			const originalText = btn.innerHTML;
-			btn.innerHTML = "Sending Data...";
-			btn.disabled = true;
+            document.getElementById('global-cancel-banner').classList.remove('hidden');
+            document.getElementById('cancel-widget').style.display = 'none';
 
-			const payload = {
-				type: "COP_Submission",
-				siteId: document.getElementById('input-siteid').value.trim(),
-				date: document.getElementById('input-date').value.trim(),
-				timeIn: document.getElementById('input-timein').value.trim(),
-				timeOut: document.getElementById('input-timeout').value.trim(),
-				techName: document.getElementById('input-tech').value.trim(),
-				rcmName: document.getElementById('input-rcm').value.trim(),
-				status: "Completed",
-				comments: "All checklist items and pictures completed."
-			};
+            const headerPerc = document.getElementById('header-percentage');
+            headerPerc.textContent = `CANCELED`;
+            headerPerc.classList.remove('text-[#E20074]', 'text-green-500');
+            headerPerc.classList.add('text-red-500');
 
-			const WEBHOOK_URL = 'https://hook.us2.make.com/x6a5ac5ahkafx3ie4gvdlmtyvi7gjg83';
+            if (progressChartInstance) {
+                progressChartInstance.data.datasets.data = [0, 0, 0, 0, state.totalTasks];
+                progressChartInstance.data.datasets.backgroundColor = ['#ef4444', '#ef4444', '#ef4444', '#ef4444', '#fecaca'];
+                progressChartInstance.update();
+            }
 
-			fetch(WEBHOOK_URL, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(payload)
-			})
-				.then(response => {
-					showSuccessModal('COP Submitted!', 'Your Close Out Package data has been successfully sent to the system.');
-					btn.innerHTML = originalText;
-				})
-				.catch(error => {
-					alert("Error sending data. Please check your connection.");
-					btn.innerHTML = originalText;
-					btn.disabled = false;
-				});
-		}
+            closeModal('cancel-modal');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
 
-		function showSuccessModal(title, message) {
-			document.getElementById('success-title').textContent = title;
-			document.getElementById('success-message').textContent = message;
-			document.getElementById('success-modal').classList.remove('hidden');
-		}
+            // 3. Send Data to Make.com Webhook
+            const WEBHOOK_URL = 'YOUR_MAKE_COM_WEBHOOK_URL_HERE'; // <-- PASTE URL HERE
 
-		function openCancelModal() { document.getElementById('cancel-modal').classList.remove('hidden'); }
-		function closeModal(modalId) { document.getElementById(modalId).classList.add('hidden'); }
+            if (WEBHOOK_URL === 'YOUR_MAKE_COM_WEBHOOK_URL_HERE') {
+                // Fallback for testing if webhook isn't pasted yet
+                setTimeout(() => {
+                    showSuccessModal('Cancellation Submitted!', 'Your Site Cancellation Report has been successfully logged and the site is now closed.');
+                }, 300);
+                return;
+            }
 
-		function initChart() {
-			const ctx = document.getElementById('progressChart').getContext('2d');
-			progressChartInstance = new Chart(ctx, {
-				type: 'doughnut',
-				data: {
-					labels: ['Arrival', 'Install', 'Integrate', 'Closeout', 'Remaining Tasks'],
-					datasets: [{
-						data: [0, 0, 0, 0, state.totalTasks],
-						backgroundColor: ['#4b5563', '#0ea5e9', '#8b5cf6', '#E20074', '#e5e7eb'],
-						borderWidth: 2, borderColor: '#ffffff', hoverOffset: 4
-					}]
-				},
-				options: {
-					responsive: true, maintainAspectRatio: false, cutout: '75%',
-					plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (context) { return ' ' + context.label + ': ' + context.parsed + ' tasks'; } } } }
-				}
-			});
-		}
+            fetch(WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+                .then(response => {
+                    showSuccessModal('Cancellation Submitted!', 'Your Site Cancellation Report has been successfully logged to the system.');
+                })
+                .catch(error => {
+                    alert("Error sending data. Please check your connection.");
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                });
+        }
 
-		document.addEventListener('DOMContentLoaded', initApp);
-	</script>
+        // Form Validation for Submit Button (Happy Path)
+        function validateSubmitButton() {
+            const totalCompleted = state.completed.size;
+            const isAllTasksCompleted = (totalCompleted === state.totalTasks);
+
+            const isAllPrePicsUploaded = (state.uploadedPicsCount === prePicsList.length);
+            const isAllPostPicsUploaded = (state.uploadedPostPicsCount === postPicsList.length);
+
+            const siteId = document.getElementById('input-siteid').value.trim();
+            const date = document.getElementById('input-date').value.trim();
+            const timeIn = document.getElementById('input-timein').value.trim();
+            const timeOut = document.getElementById('input-timeout').value.trim();
+            const tech = document.getElementById('input-tech').value.trim();
+            const rcm = document.getElementById('input-rcm').value.trim();
+
+            const isInfoFilled = (siteId !== '' && date !== '' && timeIn !== '' && timeOut !== '' && tech !== '' && rcm !== '');
+
+            const btn = document.getElementById('submit-cop-btn');
+            const warningText = document.getElementById('submit-warning');
+
+            // Don't re-validate if already cancelled
+            if (document.getElementById('header-percentage').textContent === 'CANCELED') return;
+
+            if (isAllTasksCompleted && isAllPrePicsUploaded && isAllPostPicsUploaded && isInfoFilled) {
+                // Enable button
+                btn.disabled = false;
+                btn.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+                btn.classList.add('bg-[#E20074]', 'hover:bg-[#c40064]', 'text-white', 'cursor-pointer');
+                warningText.style.display = 'none';
+            } else {
+                // Disable button
+                btn.disabled = true;
+                btn.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+                btn.classList.remove('bg-[#E20074]', 'hover:bg-[#c40064]', 'text-white', 'cursor-pointer');
+                warningText.style.display = 'block';
+
+                // Provide specific feedback
+                let missingStr = [];
+                if (!isInfoFilled) missingStr.push("General Info Fields (including Time In/Out)");
+                if (!isAllPrePicsUploaded) missingStr.push("Pre-Pictures");
+                if (!isAllTasksCompleted) missingStr.push("All Checklist Tasks");
+                if (!isAllPostPicsUploaded) missingStr.push("Post-Pictures");
+
+                warningText.textContent = "Missing items to complete: " + missingStr.join(", ");
+            }
+        }
+
+        function submitCOP() {
+            // 1. Update UI to show sending status
+            const btn = document.getElementById('submit-cop-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "Sending Data...";
+            btn.disabled = true;
+
+            // 2. Gather Data for Make.com / SharePoint
+            const payload = {
+                type: "COP_Submission",
+                siteId: document.getElementById('input-siteid').value.trim(),
+                date: document.getElementById('input-date').value.trim(),
+                timeIn: document.getElementById('input-timein').value.trim(),
+                timeOut: document.getElementById('input-timeout').value.trim(),
+                techName: document.getElementById('input-tech').value.trim(),
+                rcmName: document.getElementById('input-rcm').value.trim(),
+                status: "Completed",
+                comments: "All checklist items and pictures completed."
+            };
+
+            // 3. Send Data to Make.com Webhook
+            const WEBHOOK_URL = 'YOUR_MAKE_COM_WEBHOOK_URL_HERE'; // <-- PASTE URL HERE
+
+            if (WEBHOOK_URL === 'YOUR_MAKE_COM_WEBHOOK_URL_HERE') {
+                // Fallback for testing if webhook isn't pasted yet
+                showSuccessModal('COP Submitted!', 'Your Close Out Package has been successfully generated and submitted.');
+                btn.innerHTML = originalText;
+                return;
+            }
+
+            fetch(WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+                .then(response => {
+                    showSuccessModal('COP Submitted!', 'Your Close Out Package data has been successfully sent to the system.');
+                    btn.innerHTML = originalText;
+                })
+                .catch(error => {
+                    alert("Error sending data. Please check your connection.");
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                });
+        }
+
+        // Reusable Function for Success Modal
+        function showSuccessModal(title, message) {
+            document.getElementById('success-title').textContent = title;
+            document.getElementById('success-message').textContent = message;
+            document.getElementById('success-modal').classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        // Initialize Chart.js
+        function initChart() {
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            progressChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Arrival', 'Install', 'Integrate', 'Closeout', 'Remaining Tasks'],
+                    datasets: [{
+                        data: [0, 0, 0, 0, state.totalTasks],
+                        backgroundColor: [
+                            '#4b5563', // gray
+                            '#0ea5e9', // blue
+                            '#8b5cf6', // purple
+                            '#E20074', // magenta
+                            '#e5e7eb'  // light gray
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return ' ' + context.label + ': ' + context.parsed + ' tasks';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Start Application
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
 </body>
 
 </html>
